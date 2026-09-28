@@ -1,0 +1,19 @@
+# Meson build directories
+/build/
+/_build/
+/builddir/
+
+# C files left behind when running valac directly
+*.vala.c
+
+# Flatpak builds
+/.flatpak/
+/.flatpak-builder/
+/repo/
+
+# Editors and tools
+.vscode/
+.idea/
+*.swp
+*~
+.cache/
