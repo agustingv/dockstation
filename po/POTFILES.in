@@ -9,4 +9,5 @@ src/resources.vala
 src/resources-view.vala
 src/service-row.vala
 src/templates.vala
+src/traefik.vala
 src/window.vala

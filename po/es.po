@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: dockstation\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 09:55+0200\n"
-"PO-Revision-Date: 2026-09-28 09:53+0200\n"
+"POT-Creation-Date: 2026-09-28 10:01+0200\n"
+"PO-Revision-Date: 2026-09-28 10:01+0200\n"
 "Last-Translator: Agustin Garcia <contacto@agustin-garcia.es>\n"
 "Language-Team: Spanish\n"
 "Language: es\n"
@@ -32,15 +32,8 @@ msgid "docker;compose;container;devops;"
 msgstr "docker;compose;container;contenedor;devops;"
 
 #: data/dockstation.metainfo.xml.in:9
-msgid ""
-"DockStation keeps all your Docker Compose projects in one place. Start, stop "
-"and restart services, follow their logs, edit the configuration and create "
-"new projects from ready-made templates."
-msgstr ""
-"DockStation reúne todos sus proyectos de Docker Compose en un solo lugar. "
-"Inicie, detenga y reinicie servicios, siga sus registros, edite la "
-"configuración y cree proyectos nuevos a partir de plantillas listas para "
-"usar."
+msgid "DockStation keeps all your Docker Compose projects in one place. Start, stop and restart services, follow their logs, edit the configuration and create new projects from ready-made templates."
+msgstr "DockStation reúne todos sus proyectos de Docker Compose en un solo lugar. Inicie, detenga y reinicie servicios, siga sus registros, edite la configuración y cree proyectos nuevos a partir de plantillas listas para usar."
 
 #: data/dockstation.metainfo.xml.in:16
 msgid "Agustin Garcia"
@@ -54,9 +47,9 @@ msgstr "Primera versión."
 msgid "New Project"
 msgstr "Proyecto nuevo"
 
-#: src/new-project-dialog.vala:28 src/project-view.vala:242
-#: src/project-view.vala:278 src/project-view.vala:838
-#: src/project-view.vala:1090 src/resources-view.vala:370 src/window.vala:448
+#: src/new-project-dialog.vala:28 src/project-view.vala:245
+#: src/project-view.vala:281 src/project-view.vala:844
+#: src/project-view.vala:1096 src/resources-view.vala:370 src/window.vala:448
 #: src/window.vala:487
 msgid "_Cancel"
 msgstr "_Cancelar"
@@ -74,7 +67,7 @@ msgstr "Nombre del proyecto"
 msgid "Choose Location"
 msgstr "Elegir ubicación"
 
-#: src/new-project-dialog.vala:59 src/project-view.vala:433
+#: src/new-project-dialog.vala:59 src/project-view.vala:436
 msgid "Location"
 msgstr "Ubicación"
 
@@ -129,7 +122,7 @@ msgstr "Este proyecto ya está en la lista"
 msgid "The folder already exists and is not empty"
 msgstr "La carpeta ya existe y no está vacía"
 
-#: src/project.vala:12 src/service-row.vala:99 src/service-row.vala:112
+#: src/project.vala:12 src/service-row.vala:188 src/service-row.vala:208
 msgid "Not created"
 msgstr "No creado"
 
@@ -161,401 +154,377 @@ msgstr "Compose"
 msgid "Dockerfiles"
 msgstr "Dockerfiles"
 
-#: src/project-view.vala:132 src/window.vala:409
+#: src/project-view.vala:135 src/window.vala:409
 msgid "Project started"
 msgstr "Proyecto iniciado"
 
-#: src/project-view.vala:132 src/window.vala:410
+#: src/project-view.vala:135 src/window.vala:410
 msgid "Could not start the project"
 msgstr "No se pudo iniciar el proyecto"
 
-#: src/project-view.vala:133
+#: src/project-view.vala:136
 msgid "Project stopped"
 msgstr "Proyecto detenido"
 
-#: src/project-view.vala:133
+#: src/project-view.vala:136
 msgid "Could not stop the project"
 msgstr "No se pudo detener el proyecto"
 
-#: src/project-view.vala:134
+#: src/project-view.vala:137
 msgid "Project restarted"
 msgstr "Proyecto reiniciado"
 
-#: src/project-view.vala:134
+#: src/project-view.vala:137
 msgid "Could not restart the project"
 msgstr "No se pudo reiniciar el proyecto"
 
-#: src/project-view.vala:135
+#: src/project-view.vala:138
 msgid "Containers removed"
 msgstr "Contenedores eliminados"
 
-#: src/project-view.vala:135 src/project-view.vala:249
+#: src/project-view.vala:138 src/project-view.vala:252
 msgid "Could not take the project down"
 msgstr "No se pudieron eliminar los contenedores del proyecto"
 
-#: src/project-view.vala:136
+#: src/project-view.vala:139
 msgid "Images pulled"
 msgstr "Imágenes descargadas"
 
-#: src/project-view.vala:136
+#: src/project-view.vala:139
 msgid "Could not pull images"
 msgstr "No se pudieron descargar las imágenes"
 
-#: src/project-view.vala:137
+#: src/project-view.vala:140
 msgid "Images built"
 msgstr "Imágenes construidas"
 
-#: src/project-view.vala:137
+#: src/project-view.vala:140
 msgid "Could not build images"
 msgstr "No se pudieron construir las imágenes"
 
-#: src/project-view.vala:199
+#: src/project-view.vala:202
 #, c-format
 msgid "No compose file found in %s"
 msgstr "No se encontró ningún archivo compose en %s"
 
-#: src/project-view.vala:213 src/project-view.vala:876
+#: src/project-view.vala:216 src/project-view.vala:882
 msgid "Done"
 msgstr "Hecho"
 
-#: src/project-view.vala:216 src/project-view.vala:795
+#: src/project-view.vala:219 src/project-view.vala:801
 #, c-format
 msgid "Exited with status %d"
 msgstr "Terminó con el estado %d"
 
-#: src/project-view.vala:239
+#: src/project-view.vala:242
 msgid "Remove Containers and Volumes?"
 msgstr "¿Eliminar los contenedores y los volúmenes?"
 
-#: src/project-view.vala:240
-msgid ""
-"This runs “docker compose down --volumes”. All data stored in the project’s "
-"named volumes will be permanently deleted."
-msgstr ""
-"Se ejecutará «docker compose down --volumes». Todos los datos guardados en "
-"los volúmenes con nombre del proyecto se eliminarán de forma permanente."
+#: src/project-view.vala:243
+msgid "This runs “docker compose down --volumes”. All data stored in the project’s named volumes will be permanently deleted."
+msgstr "Se ejecutará «docker compose down --volumes». Todos los datos guardados en los volúmenes con nombre del proyecto se eliminarán de forma permanente."
 
-#: src/project-view.vala:243 src/resources-view.vala:424
+#: src/project-view.vala:246 src/resources-view.vala:424
 #: src/resources-view.vala:440 src/resources-view.vala:459
 #: src/resources-view.vala:468
 msgid "_Remove"
 msgstr "_Eliminar"
 
-#: src/project-view.vala:249 src/project-view.vala:294
+#: src/project-view.vala:252 src/project-view.vala:297
 msgid "Containers and volumes removed"
 msgstr "Contenedores y volúmenes eliminados"
 
-#: src/project-view.vala:257
+#: src/project-view.vala:260
 msgid "Remove Containers and Volumes"
 msgstr "Eliminar los contenedores y los volúmenes"
 
-#: src/project-view.vala:258
-msgid ""
-"Also deletes locally built images and all data in the volumes, such as "
-"databases"
-msgstr ""
-"También elimina las imágenes construidas localmente y todos los datos de los "
-"volúmenes, como las bases de datos"
+#: src/project-view.vala:261
+msgid "Also deletes locally built images and all data in the volumes, such as databases"
+msgstr "También elimina las imágenes construidas localmente y todos los datos de los volúmenes, como las bases de datos"
 
-#: src/project-view.vala:263
+#: src/project-view.vala:266
 msgid "Move Folder to Trash"
 msgstr "Mover la carpeta a la papelera"
 
-#: src/project-view.vala:273
+#: src/project-view.vala:276
 #, c-format
 msgid "Delete “%s”?"
 msgstr "¿Eliminar «%s»?"
 
-#: src/project-view.vala:274
-msgid ""
-"The project will be removed from the list. Data in volumes cannot be "
-"recovered."
-msgstr ""
-"El proyecto se quitará de la lista. Los datos de los volúmenes no se pueden "
-"recuperar."
+#: src/project-view.vala:277
+msgid "The project will be removed from the list. Data in volumes cannot be recovered."
+msgstr "El proyecto se quitará de la lista. Los datos de los volúmenes no se pueden recuperar."
 
-#: src/project-view.vala:279 src/resources-view.vala:450
+#: src/project-view.vala:282 src/resources-view.vala:450
 #: src/resources-view.vala:477
 msgid "_Delete"
 msgstr "_Eliminar"
 
-#: src/project-view.vala:295
+#: src/project-view.vala:298
 msgid "Could not remove the containers; the project was not deleted"
 msgstr "No se pudieron eliminar los contenedores; el proyecto no se eliminó"
 
-#: src/project-view.vala:311
+#: src/project-view.vala:314
 #, c-format
 msgid "Could not move the folder to the Trash: %s"
 msgstr "No se pudo mover la carpeta a la papelera: %s"
 
-#: src/project-view.vala:347 src/project-view.vala:456
+#: src/project-view.vala:350 src/project-view.vala:459
 msgid "Services"
 msgstr "Servicios"
 
-#: src/project-view.vala:348
+#: src/project-view.vala:351
 msgid "Configuration"
 msgstr "Configuración"
 
-#: src/project-view.vala:349
+#: src/project-view.vala:352
 msgid "Logs"
 msgstr "Registros"
 
-#: src/project-view.vala:350
+#: src/project-view.vala:353
 msgid "Output"
 msgstr "Salida"
 
-#: src/project-view.vala:360 src/service-row.vala:62 src/service-row.vala:119
+#: src/project-view.vala:363 src/service-row.vala:77 src/service-row.vala:218
 msgid "Start"
 msgstr "Iniciar"
 
-#: src/project-view.vala:363
+#: src/project-view.vala:366
 msgid "Create and Start All Services"
 msgstr "Crear e iniciar todos los servicios"
 
-#: src/project-view.vala:369
+#: src/project-view.vala:372
 msgid "Stop All Services"
 msgstr "Detener todos los servicios"
 
-#: src/project-view.vala:373
+#: src/project-view.vala:376
 msgid "Restart All Services"
 msgstr "Reiniciar todos los servicios"
 
-#: src/project-view.vala:378
+#: src/project-view.vala:381
 msgid "_Pull Images"
 msgstr "_Descargar imágenes"
 
-#: src/project-view.vala:379
+#: src/project-view.vala:382
 msgid "_Build Images"
 msgstr "_Construir imágenes"
 
-#: src/project-view.vala:382
+#: src/project-view.vala:385
 msgid "_Remove Containers"
 msgstr "_Eliminar contenedores"
 
-#: src/project-view.vala:383
+#: src/project-view.vala:386
 msgid "Remove Containers and _Volumes…"
 msgstr "Eliminar contenedores y _volúmenes…"
 
-#: src/project-view.vala:386
+#: src/project-view.vala:389
 msgid "_Open Folder"
 msgstr "_Abrir carpeta"
 
-#: src/project-view.vala:387
+#: src/project-view.vala:390
 msgid "Remove _from List…"
 msgstr "_Quitar de la lista…"
 
-#: src/project-view.vala:388
+#: src/project-view.vala:391
 msgid "_Delete Project…"
 msgstr "Eliminar _proyecto…"
 
-#: src/project-view.vala:394
+#: src/project-view.vala:397
 msgid "Project Menu"
 msgstr "Menú del proyecto"
 
-#: src/project-view.vala:427
+#: src/project-view.vala:430
 msgid "Open Folder"
 msgstr "Abrir carpeta"
 
-#: src/project-view.vala:440
+#: src/project-view.vala:443
 msgid "Status"
 msgstr "Estado"
 
-#: src/project-view.vala:449 src/resources-view.vala:128
+#: src/project-view.vala:452 src/resources-view.vala:128
 msgid "Refresh"
 msgstr "Actualizar"
 
-#: src/project-view.vala:504
+#: src/project-view.vala:507
 msgid "File"
 msgstr "Archivo"
 
-#: src/project-view.vala:508
+#: src/project-view.vala:511
 msgid "Validate"
 msgstr "Validar"
 
-#: src/project-view.vala:510
+#: src/project-view.vala:513
 msgid "Check the Compose Configuration"
 msgstr "Comprobar la configuración de Compose"
 
-#: src/project-view.vala:514
+#: src/project-view.vala:517
 msgid "Discard Changes"
 msgstr "Descartar los cambios"
 
-#: src/project-view.vala:516
+#: src/project-view.vala:519
 msgid "Save"
 msgstr "Guardar"
 
-#: src/project-view.vala:518
+#: src/project-view.vala:521
 msgid "Save (Ctrl+S)"
 msgstr "Guardar (Ctrl+S)"
 
-#: src/project-view.vala:562
+#: src/project-view.vala:565
 msgid "All Services"
 msgstr "Todos los servicios"
 
-#: src/project-view.vala:563
+#: src/project-view.vala:566
 msgid "Service"
 msgstr "Servicio"
 
-#: src/project-view.vala:572
+#: src/project-view.vala:575
 msgid "Show Timestamps"
 msgstr "Mostrar marcas de tiempo"
 
-#: src/project-view.vala:576
+#: src/project-view.vala:579
 msgid "Reload Logs"
 msgstr "Recargar registros"
 
-#: src/project-view.vala:581 src/project-view.vala:611
+#: src/project-view.vala:584 src/project-view.vala:614
 msgid "Clear"
 msgstr "Limpiar"
 
-#: src/project-view.vala:603
+#: src/project-view.vala:606
 msgid "Output of the commands run on this project"
 msgstr "Salida de las órdenes ejecutadas en este proyecto"
 
-#: src/project-view.vala:738
+#: src/project-view.vala:747
 msgid "No services defined"
 msgstr "No hay servicios definidos"
 
-#: src/project-view.vala:747
+#: src/project-view.vala:756
 #, c-format
 msgid "Service “%s” started"
 msgstr "Servicio «%s» iniciado"
 
-#: src/project-view.vala:748
+#: src/project-view.vala:757
 #, c-format
 msgid "Could not start “%s”"
 msgstr "No se pudo iniciar «%s»"
 
-#: src/project-view.vala:752
+#: src/project-view.vala:761
 #, c-format
 msgid "Service “%s” stopped"
 msgstr "Servicio «%s» detenido"
 
-#: src/project-view.vala:753
+#: src/project-view.vala:762
 #, c-format
 msgid "Could not stop “%s”"
 msgstr "No se pudo detener «%s»"
 
-#: src/project-view.vala:757
+#: src/project-view.vala:766
 #, c-format
 msgid "Service “%s” restarted"
 msgstr "Servicio «%s» reiniciado"
 
-#: src/project-view.vala:758
+#: src/project-view.vala:767
 #, c-format
 msgid "Could not restart “%s”"
 msgstr "No se pudo reiniciar «%s»"
 
-#: src/project-view.vala:783
+#: src/project-view.vala:789
 #, c-format
-msgid ""
-"The data folder “%s” is not a dedicated database folder, so it will not be "
-"emptied."
-msgstr ""
-"La carpeta de datos «%s» no es una carpeta dedicada a la base de datos, así "
-"que no se vaciará."
+msgid "The data folder “%s” is not a dedicated database folder, so it will not be emptied."
+msgstr "La carpeta de datos «%s» no es una carpeta dedicada a la base de datos, así que no se vaciará."
 
-#: src/project-view.vala:814
+#: src/project-view.vala:820
 #, c-format
 msgid "the folder “%s”"
 msgstr "la carpeta «%s»"
 
-#: src/project-view.vala:816
+#: src/project-view.vala:822
 msgid "an unnamed volume"
 msgstr "un volumen sin nombre"
 
-#: src/project-view.vala:818
+#: src/project-view.vala:824
 #, c-format
 msgid "the volume “%s”"
 msgstr "el volumen «%s»"
 
-#: src/project-view.vala:827
+#: src/project-view.vala:833
 #, c-format
 msgid "and %d more"
 msgstr "y %d más"
 
-#: src/project-view.vala:830
+#: src/project-view.vala:836
 #, c-format
 msgid "the scripts in the volume “%s”"
 msgstr "los scripts del volumen «%s»"
 
-#: src/project-view.vala:834
+#: src/project-view.vala:840
 #, c-format
 msgid "Reset Database “%s”?"
 msgstr "¿Restablecer la base de datos «%s»?"
 
-#: src/project-view.vala:835
+#: src/project-view.vala:841
 #, c-format
-msgid ""
-"All data in this %s database, stored in %s, is deleted permanently. This "
-"cannot be undone."
-msgstr ""
-"Todos los datos de esta base de datos %s, guardados en %s, se eliminarán de "
-"forma permanente. Esta acción no se puede deshacer."
+msgid "All data in this %s database, stored in %s, is deleted permanently. This cannot be undone."
+msgstr "Todos los datos de esta base de datos %s, guardados en %s, se eliminarán de forma permanente. Esta acción no se puede deshacer."
 
-#: src/project-view.vala:836
+#: src/project-view.vala:842
 msgid "The database is then created again, running its init scripts:"
-msgstr ""
-"Después, la base de datos se creará de nuevo ejecutando sus scripts de "
-"inicialización:"
+msgstr "Después, la base de datos se creará de nuevo ejecutando sus scripts de inicialización:"
 
-#: src/project-view.vala:839
+#: src/project-view.vala:845
 msgid "_Reset Database"
 msgstr "_Restablecer la base de datos"
 
-#: src/project-view.vala:849
+#: src/project-view.vala:855
 #, c-format
 msgid "Resetting the “%s” database"
 msgstr "Restableciendo la base de datos «%s»"
 
-#: src/project-view.vala:876
+#: src/project-view.vala:882
 msgid "The database was not reset"
 msgstr "La base de datos no se restableció"
 
-#: src/project-view.vala:881
+#: src/project-view.vala:887
 #, c-format
 msgid "Database “%s” reset; its init scripts are running"
-msgstr ""
-"Base de datos «%s» restablecida; se están ejecutando sus scripts de "
-"inicialización"
+msgstr "Base de datos «%s» restablecida; se están ejecutando sus scripts de inicialización"
 
-#: src/project-view.vala:885
+#: src/project-view.vala:891
 #, c-format
 msgid "Could not reset the “%s” database"
 msgstr "No se pudo restablecer la base de datos «%s»"
 
-#: src/project-view.vala:952
+#: src/project-view.vala:958
 msgid "Log stream ended"
 msgstr "Fin del registro"
 
-#: src/project-view.vala:1087 src/window.vala:352
+#: src/project-view.vala:1093 src/window.vala:352
 msgid "Save Changes?"
 msgstr "¿Guardar los cambios?"
 
-#: src/project-view.vala:1088
+#: src/project-view.vala:1094
 #, c-format
 msgid "“%s” has unsaved changes."
 msgstr "«%s» tiene cambios sin guardar."
 
-#: src/project-view.vala:1091 src/window.vala:355
+#: src/project-view.vala:1097 src/window.vala:355
 msgid "_Discard"
 msgstr "_Descartar"
 
-#: src/project-view.vala:1092 src/window.vala:356
+#: src/project-view.vala:1098 src/window.vala:356
 msgid "_Save"
 msgstr "_Guardar"
 
-#: src/project-view.vala:1123
+#: src/project-view.vala:1129
 #, c-format
 msgid "Could not save: %s"
 msgstr "No se pudo guardar: %s"
 
-#: src/project-view.vala:1127
+#: src/project-view.vala:1133
 #, c-format
 msgid "Saved “%s”"
 msgstr "Se guardó «%s»"
 
-#: src/project-view.vala:1141
+#: src/project-view.vala:1147
 msgid "The configuration is valid"
 msgstr "La configuración es válida"
 
@@ -658,20 +627,12 @@ msgid "The command failed"
 msgstr "La orden falló"
 
 #: src/resources-view.vala:422
-msgid ""
-"The stopped container is removed. Its image and volumes are kept, and the "
-"project creates it again the next time it starts."
-msgstr ""
-"Se eliminará el contenedor detenido. Su imagen y sus volúmenes se conservan, "
-"y el proyecto lo volverá a crear la próxima vez que se inicie."
+msgid "The stopped container is removed. Its image and volumes are kept, and the project creates it again the next time it starts."
+msgstr "Se eliminará el contenedor detenido. Su imagen y sus volúmenes se conservan, y el proyecto lo volverá a crear la próxima vez que se inicie."
 
 #: src/resources-view.vala:423
-msgid ""
-"The stopped container is removed, including any changes made inside it. Its "
-"image and volumes are kept."
-msgstr ""
-"Se eliminará el contenedor detenido, incluidos los cambios hechos dentro de "
-"él. Su imagen y sus volúmenes se conservan."
+msgid "The stopped container is removed, including any changes made inside it. Its image and volumes are kept."
+msgstr "Se eliminará el contenedor detenido, incluidos los cambios hechos dentro de él. Su imagen y sus volúmenes se conservan."
 
 #: src/resources-view.vala:424
 #, c-format
@@ -685,16 +646,11 @@ msgstr "Se eliminó «%s»"
 
 #: src/resources-view.vala:431
 msgid "The project will pull or build it again the next time it starts."
-msgstr ""
-"El proyecto la volverá a descargar o construir la próxima vez que se inicie."
+msgstr "El proyecto la volverá a descargar o construir la próxima vez que se inicie."
 
 #: src/resources-view.vala:432
-msgid ""
-"If it came from a registry, it can be downloaded again. Images built on this "
-"computer have to be built again."
-msgstr ""
-"Si procede de un registro, se puede volver a descargar. Las imágenes "
-"construidas en este equipo tendrán que construirse de nuevo."
+msgid "If it came from a registry, it can be downloaded again. Images built on this computer have to be built again."
+msgstr "Si procede de un registro, se puede volver a descargar. Las imágenes construidas en este equipo tendrán que construirse de nuevo."
 
 #: src/resources-view.vala:434
 #, c-format
@@ -707,12 +663,8 @@ msgid "Remove Image “%s”?"
 msgstr "¿Eliminar la imagen «%s»?"
 
 #: src/resources-view.vala:446
-msgid ""
-"All data stored in it, such as databases, is deleted permanently. This "
-"cannot be undone."
-msgstr ""
-"Todos los datos que contiene, como las bases de datos, se eliminarán de "
-"forma permanente. Esta acción no se puede deshacer."
+msgid "All data stored in it, such as databases, is deleted permanently. This cannot be undone."
+msgstr "Todos los datos que contiene, como las bases de datos, se eliminarán de forma permanente. Esta acción no se puede deshacer."
 
 #: src/resources-view.vala:448
 #, c-format
@@ -738,12 +690,8 @@ msgstr[1] "¿Eliminar los %d contenedores detenidos?"
 
 #: src/resources-view.vala:458
 #, c-format
-msgid ""
-"Docker estimates %s can be freed. Images and volumes are kept, and projects "
-"can create their containers again."
-msgstr ""
-"Docker calcula que se pueden liberar %s. Las imágenes y los volúmenes se "
-"conservan, y los proyectos pueden volver a crear sus contenedores."
+msgid "Docker estimates %s can be freed. Images and volumes are kept, and projects can create their containers again."
+msgstr "Docker calcula que se pueden liberar %s. Las imágenes y los volúmenes se conservan, y los proyectos pueden volver a crear sus contenedores."
 
 #: src/resources-view.vala:460
 msgid "Stopped containers removed"
@@ -758,14 +706,8 @@ msgstr[1] "¿Eliminar las %d imágenes sin usar?"
 
 #: src/resources-view.vala:467
 #, c-format
-msgid ""
-"Removes every image that no container uses, including images built by your "
-"projects; they are pulled or built again when needed. Docker estimates %s "
-"can be freed."
-msgstr ""
-"Elimina todas las imágenes que no usa ningún contenedor, incluidas las "
-"construidas por sus proyectos; se volverán a descargar o construir cuando "
-"hagan falta. Docker calcula que se pueden liberar %s."
+msgid "Removes every image that no container uses, including images built by your projects; they are pulled or built again when needed. Docker estimates %s can be freed."
+msgstr "Elimina todas las imágenes que no usa ningún contenedor, incluidas las construidas por sus proyectos; se volverán a descargar o construir cuando hagan falta. Docker calcula que se pueden liberar %s."
 
 #: src/resources-view.vala:469
 msgid "Unused images removed"
@@ -780,15 +722,8 @@ msgstr[1] "¿Eliminar los %d volúmenes sin usar?"
 
 #: src/resources-view.vala:476
 #, c-format
-msgid ""
-"All data in these volumes, such as databases, is deleted permanently. This "
-"cannot be undone. Volumes attached to a container, even a stopped one, are "
-"kept. Docker estimates %s can be freed."
-msgstr ""
-"Todos los datos de estos volúmenes, como las bases de datos, se eliminarán "
-"de forma permanente. Esta acción no se puede deshacer. Los volúmenes "
-"conectados a un contenedor, aunque esté detenido, se conservan. Docker "
-"calcula que se pueden liberar %s."
+msgid "All data in these volumes, such as databases, is deleted permanently. This cannot be undone. Volumes attached to a container, even a stopped one, are kept. Docker estimates %s can be freed."
+msgstr "Todos los datos de estos volúmenes, como las bases de datos, se eliminarán de forma permanente. Esta acción no se puede deshacer. Los volúmenes conectados a un contenedor, aunque esté detenido, se conservan. Docker calcula que se pueden liberar %s."
 
 #: src/resources-view.vala:478
 msgid "Unused volumes deleted"
@@ -800,11 +735,8 @@ msgstr "¿Vaciar la caché de compilación?"
 
 #: src/resources-view.vala:485
 #, c-format
-msgid ""
-"Docker estimates %s can be freed. The next image builds will take longer."
-msgstr ""
-"Docker calcula que se pueden liberar %s. Las próximas construcciones de "
-"imágenes tardarán más."
+msgid "Docker estimates %s can be freed. The next image builds will take longer."
+msgstr "Docker calcula que se pueden liberar %s. Las próximas construcciones de imágenes tardarán más."
 
 #: src/resources-view.vala:486
 msgid "_Clear"
@@ -824,12 +756,8 @@ msgid "Remove Container"
 msgstr "Eliminar contenedor"
 
 #: src/resources-view.vala:516
-msgid ""
-"Container sizes only count the data each container wrote; its image is "
-"counted under Images."
-msgstr ""
-"El tamaño de los contenedores solo incluye los datos que ha escrito cada "
-"uno; su imagen se cuenta en Imágenes."
+msgid "Container sizes only count the data each container wrote; its image is counted under Images."
+msgstr "El tamaño de los contenedores solo incluye los datos que ha escrito cada uno; su imagen se cuenta en Imágenes."
 
 #: src/resources-view.vala:524
 msgid "Remove _Stopped…"
@@ -885,11 +813,8 @@ msgid "Remove Image"
 msgstr "Eliminar imagen"
 
 #: src/resources-view.vala:578
-msgid ""
-"Images share layers, so group totals can add up to more than the total size."
-msgstr ""
-"Las imágenes comparten capas, así que la suma de los grupos puede superar el "
-"tamaño total."
+msgid "Images share layers, so group totals can add up to more than the total size."
+msgstr "Las imágenes comparten capas, así que la suma de los grupos puede superar el tamaño total."
 
 #: src/resources-view.vala:586
 msgid "Remove _Unused…"
@@ -937,38 +862,48 @@ msgstr[1] "Eliminar %d volúmenes que ningún contenedor usa"
 msgid "No Volumes"
 msgstr "No hay volúmenes"
 
-#: src/service-row.vala:61
+#: src/service-row.vala:67 src/service-row.vala:215
 msgid "Open in Browser"
 msgstr "Abrir en el navegador"
 
-#: src/service-row.vala:63
+#: src/service-row.vala:78
 msgid "Restart"
 msgstr "Reiniciar"
 
-#: src/service-row.vala:64
+#: src/service-row.vala:79
 msgid "Reset Database from Init Scripts"
 msgstr "Restablecer la base de datos desde los scripts de inicialización"
 
-#: src/service-row.vala:66
+#: src/service-row.vala:81
 msgid "Show Logs"
 msgstr "Mostrar registros"
 
-#: src/service-row.vala:73
+#: src/service-row.vala:109
+#, c-format
+msgid "Traefik router “%s”"
+msgstr "Enrutador «%s» de Traefik"
+
+#: src/service-row.vala:115
+#, c-format
+msgid "Port %d published on this computer"
+msgstr "Puerto %d publicado en este equipo"
+
+#: src/service-row.vala:154
 #, c-format
 msgid "Reset the %s Database from Its Init Scripts"
 msgstr "Restablecer la base de datos %s desde sus scripts de inicialización"
 
-#: src/service-row.vala:101
+#: src/service-row.vala:190
 #, c-format
 msgid "%s (%d/%d running)"
 msgstr "%s (%d/%d en ejecución)"
 
-#: src/service-row.vala:116
+#: src/service-row.vala:214
 #, c-format
-msgid "Open http://localhost:%d"
-msgstr "Abrir http://localhost:%d"
+msgid "Open %s"
+msgstr "Abrir %s"
 
-#: src/service-row.vala:119
+#: src/service-row.vala:218
 msgid "Stop"
 msgstr "Detener"
 
@@ -1018,8 +953,7 @@ msgstr "WordPress con una base de datos MariaDB"
 
 #: src/templates.vala:252
 msgid "Some plugins may not support the newest PHP yet"
-msgstr ""
-"Puede que algunos complementos aún no admitan la versión más reciente de PHP"
+msgstr "Puede que algunos complementos aún no admitan la versión más reciente de PHP"
 
 #: src/templates.vala:300
 msgid "Drupal"
@@ -1059,9 +993,7 @@ msgstr "Una aplicación Symfony con PostgreSQL, creada en el primer inicio"
 
 #: src/templates.vala:442
 msgid "Symfony 8 requires PHP 8.4 or newer; older versions get Symfony 7.4 LTS"
-msgstr ""
-"Symfony 8 necesita PHP 8.4 o posterior; con versiones anteriores se instala "
-"Symfony 7.4 LTS"
+msgstr "Symfony 8 necesita PHP 8.4 o posterior; con versiones anteriores se instala Symfony 7.4 LTS"
 
 #. Sidebar
 #: src/window.vala:78
@@ -1167,8 +1099,7 @@ msgstr "¿Quitar «%s» de la lista?"
 
 #: src/window.vala:485
 msgid "The project folder, its containers and its volumes will not be deleted."
-msgstr ""
-"No se eliminarán la carpeta del proyecto, sus contenedores ni sus volúmenes."
+msgstr "No se eliminarán la carpeta del proyecto, sus contenedores ni sus volúmenes."
 
 #: src/window.vala:488
 msgid "_Remove from List"

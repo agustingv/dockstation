@@ -48,6 +48,9 @@ namespace DockStation {
         private bool refreshing_services = false;
         // Databases that can be reset, keyed by container ID; inspected again when the IDs change.
         private HashTable<string, DatabaseInit> databases = new HashTable<string, DatabaseInit> (str_hash, str_equal);
+        // Traefik addresses per container ID, read from the containers' labels.
+        private HashTable<string, GenericArray<TraefikRoute>> traefik_routes =
+            new HashTable<string, GenericArray<TraefikRoute>> (str_hash, str_equal);
         private string inspected_containers = "";
         private bool config_reload_pending = false;
 
@@ -329,8 +332,8 @@ namespace DockStation {
             });
         }
 
-        private void open_browser (int port) {
-            var launcher = new Gtk.UriLauncher ("http://localhost:%d".printf (port));
+        private void open_browser (string url) {
+            var launcher = new Gtk.UriLauncher (url);
             launcher.launch.begin ((Gtk.Window) get_root (), null, (obj, res) => {
                 try {
                     launcher.launch.end (res);
@@ -676,7 +679,7 @@ namespace DockStation {
                     }
                 }
 
-                yield detect_databases (infos, order);
+                yield inspect_containers (infos, order);
                 update_service_rows (infos, order);
             } catch (IOError.CANCELLED e) {
                 return;
@@ -691,8 +694,11 @@ namespace DockStation {
             }
         }
 
-        /* Finds database containers that have init scripts (see DatabaseInit). */
-        private async void detect_databases (HashTable<string, ServiceInfo> infos, string[] order) {
+        /*
+         * Reads what DockStation needs from the containers themselves: databases
+         * with init scripts (see DatabaseInit) and Traefik routes (see Traefik).
+         */
+        private async void inspect_containers (HashTable<string, ServiceInfo> infos, string[] order) {
             string[] ids = {};
             foreach (unowned string name in order) {
                 var info = infos[name];
@@ -706,9 +712,10 @@ namespace DockStation {
             }
             try {
                 databases = yield DatabaseInit.inspect (ids, cancellable);
+                traefik_routes = yield Traefik.inspect (ids, cancellable);
                 inspected_containers = key;
             } catch (Error e) {
-                // Not critical: the reset button just stays hidden.
+                // Not critical: the reset and link buttons just stay hidden.
             }
         }
 
@@ -725,12 +732,14 @@ namespace DockStation {
                 if (row == null) {
                     row = new ServiceRow (name);
                     row.action_requested.connect (on_service_action);
+                    row.open_url.connect (open_browser);
                     row.set_actions_sensitive (!busy);
                     services_group.add (row);
                     service_rows[name] = row;
                 }
-                row.update (infos[name]);
                 var info = infos[name];
+                row.show_traefik_routes (info.container_id != "" ? traefik_routes[info.container_id] : null);
+                row.update (info);
                 row.show_database_reset (info.containers == 1 ? databases[info.container_id] : null);
             }
 
@@ -759,9 +768,6 @@ namespace DockStation {
                     break;
                 case "logs":
                     show_logs_for (service);
-                    break;
-                case "open":
-                    open_browser (row.host_port);
                     break;
                 case "reset-database":
                     if (row.database != null) {

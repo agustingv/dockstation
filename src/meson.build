@@ -17,6 +17,7 @@ dockstation_sources = files(
   'resources-view.vala',
   'settings.vala',
   'database-init.vala',
+  'traefik.vala',
 )
 
 dockstation_deps = [

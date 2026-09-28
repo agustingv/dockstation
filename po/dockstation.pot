@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: dockstation\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 09:55+0200\n"
+"POT-Creation-Date: 2026-09-28 10:01+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -51,9 +51,9 @@ msgstr ""
 msgid "New Project"
 msgstr ""
 
-#: src/new-project-dialog.vala:28 src/project-view.vala:242
-#: src/project-view.vala:278 src/project-view.vala:838
-#: src/project-view.vala:1090 src/resources-view.vala:370 src/window.vala:448
+#: src/new-project-dialog.vala:28 src/project-view.vala:245
+#: src/project-view.vala:281 src/project-view.vala:844
+#: src/project-view.vala:1096 src/resources-view.vala:370 src/window.vala:448
 #: src/window.vala:487
 msgid "_Cancel"
 msgstr ""
@@ -71,7 +71,7 @@ msgstr ""
 msgid "Choose Location"
 msgstr ""
 
-#: src/new-project-dialog.vala:59 src/project-view.vala:433
+#: src/new-project-dialog.vala:59 src/project-view.vala:436
 msgid "Location"
 msgstr ""
 
@@ -126,7 +126,7 @@ msgstr ""
 msgid "The folder already exists and is not empty"
 msgstr ""
 
-#: src/project.vala:12 src/service-row.vala:99 src/service-row.vala:112
+#: src/project.vala:12 src/service-row.vala:188 src/service-row.vala:208
 msgid "Not created"
 msgstr ""
 
@@ -158,387 +158,387 @@ msgstr ""
 msgid "Dockerfiles"
 msgstr ""
 
-#: src/project-view.vala:132 src/window.vala:409
+#: src/project-view.vala:135 src/window.vala:409
 msgid "Project started"
 msgstr ""
 
-#: src/project-view.vala:132 src/window.vala:410
+#: src/project-view.vala:135 src/window.vala:410
 msgid "Could not start the project"
 msgstr ""
 
-#: src/project-view.vala:133
+#: src/project-view.vala:136
 msgid "Project stopped"
 msgstr ""
 
-#: src/project-view.vala:133
+#: src/project-view.vala:136
 msgid "Could not stop the project"
 msgstr ""
 
-#: src/project-view.vala:134
+#: src/project-view.vala:137
 msgid "Project restarted"
 msgstr ""
 
-#: src/project-view.vala:134
+#: src/project-view.vala:137
 msgid "Could not restart the project"
 msgstr ""
 
-#: src/project-view.vala:135
+#: src/project-view.vala:138
 msgid "Containers removed"
 msgstr ""
 
-#: src/project-view.vala:135 src/project-view.vala:249
+#: src/project-view.vala:138 src/project-view.vala:252
 msgid "Could not take the project down"
 msgstr ""
 
-#: src/project-view.vala:136
+#: src/project-view.vala:139
 msgid "Images pulled"
 msgstr ""
 
-#: src/project-view.vala:136
+#: src/project-view.vala:139
 msgid "Could not pull images"
 msgstr ""
 
-#: src/project-view.vala:137
+#: src/project-view.vala:140
 msgid "Images built"
 msgstr ""
 
-#: src/project-view.vala:137
+#: src/project-view.vala:140
 msgid "Could not build images"
 msgstr ""
 
-#: src/project-view.vala:199
+#: src/project-view.vala:202
 #, c-format
 msgid "No compose file found in %s"
 msgstr ""
 
-#: src/project-view.vala:213 src/project-view.vala:876
+#: src/project-view.vala:216 src/project-view.vala:882
 msgid "Done"
 msgstr ""
 
-#: src/project-view.vala:216 src/project-view.vala:795
+#: src/project-view.vala:219 src/project-view.vala:801
 #, c-format
 msgid "Exited with status %d"
 msgstr ""
 
-#: src/project-view.vala:239
+#: src/project-view.vala:242
 msgid "Remove Containers and Volumes?"
 msgstr ""
 
-#: src/project-view.vala:240
+#: src/project-view.vala:243
 msgid ""
 "This runs “docker compose down --volumes”. All data stored in the project’s "
 "named volumes will be permanently deleted."
 msgstr ""
 
-#: src/project-view.vala:243 src/resources-view.vala:424
+#: src/project-view.vala:246 src/resources-view.vala:424
 #: src/resources-view.vala:440 src/resources-view.vala:459
 #: src/resources-view.vala:468
 msgid "_Remove"
 msgstr ""
 
-#: src/project-view.vala:249 src/project-view.vala:294
+#: src/project-view.vala:252 src/project-view.vala:297
 msgid "Containers and volumes removed"
 msgstr ""
 
-#: src/project-view.vala:257
+#: src/project-view.vala:260
 msgid "Remove Containers and Volumes"
 msgstr ""
 
-#: src/project-view.vala:258
+#: src/project-view.vala:261
 msgid ""
 "Also deletes locally built images and all data in the volumes, such as "
 "databases"
 msgstr ""
 
-#: src/project-view.vala:263
+#: src/project-view.vala:266
 msgid "Move Folder to Trash"
 msgstr ""
 
-#: src/project-view.vala:273
+#: src/project-view.vala:276
 #, c-format
 msgid "Delete “%s”?"
 msgstr ""
 
-#: src/project-view.vala:274
+#: src/project-view.vala:277
 msgid ""
 "The project will be removed from the list. Data in volumes cannot be "
 "recovered."
 msgstr ""
 
-#: src/project-view.vala:279 src/resources-view.vala:450
+#: src/project-view.vala:282 src/resources-view.vala:450
 #: src/resources-view.vala:477
 msgid "_Delete"
 msgstr ""
 
-#: src/project-view.vala:295
+#: src/project-view.vala:298
 msgid "Could not remove the containers; the project was not deleted"
 msgstr ""
 
-#: src/project-view.vala:311
+#: src/project-view.vala:314
 #, c-format
 msgid "Could not move the folder to the Trash: %s"
 msgstr ""
 
-#: src/project-view.vala:347 src/project-view.vala:456
+#: src/project-view.vala:350 src/project-view.vala:459
 msgid "Services"
 msgstr ""
 
-#: src/project-view.vala:348
+#: src/project-view.vala:351
 msgid "Configuration"
 msgstr ""
 
-#: src/project-view.vala:349
+#: src/project-view.vala:352
 msgid "Logs"
 msgstr ""
 
-#: src/project-view.vala:350
+#: src/project-view.vala:353
 msgid "Output"
 msgstr ""
 
-#: src/project-view.vala:360 src/service-row.vala:62 src/service-row.vala:119
+#: src/project-view.vala:363 src/service-row.vala:77 src/service-row.vala:218
 msgid "Start"
 msgstr ""
 
-#: src/project-view.vala:363
+#: src/project-view.vala:366
 msgid "Create and Start All Services"
 msgstr ""
 
-#: src/project-view.vala:369
+#: src/project-view.vala:372
 msgid "Stop All Services"
 msgstr ""
 
-#: src/project-view.vala:373
+#: src/project-view.vala:376
 msgid "Restart All Services"
 msgstr ""
 
-#: src/project-view.vala:378
+#: src/project-view.vala:381
 msgid "_Pull Images"
 msgstr ""
 
-#: src/project-view.vala:379
+#: src/project-view.vala:382
 msgid "_Build Images"
 msgstr ""
 
-#: src/project-view.vala:382
+#: src/project-view.vala:385
 msgid "_Remove Containers"
 msgstr ""
 
-#: src/project-view.vala:383
+#: src/project-view.vala:386
 msgid "Remove Containers and _Volumes…"
 msgstr ""
 
-#: src/project-view.vala:386
+#: src/project-view.vala:389
 msgid "_Open Folder"
 msgstr ""
 
-#: src/project-view.vala:387
+#: src/project-view.vala:390
 msgid "Remove _from List…"
 msgstr ""
 
-#: src/project-view.vala:388
+#: src/project-view.vala:391
 msgid "_Delete Project…"
 msgstr ""
 
-#: src/project-view.vala:394
+#: src/project-view.vala:397
 msgid "Project Menu"
 msgstr ""
 
-#: src/project-view.vala:427
+#: src/project-view.vala:430
 msgid "Open Folder"
 msgstr ""
 
-#: src/project-view.vala:440
+#: src/project-view.vala:443
 msgid "Status"
 msgstr ""
 
-#: src/project-view.vala:449 src/resources-view.vala:128
+#: src/project-view.vala:452 src/resources-view.vala:128
 msgid "Refresh"
 msgstr ""
 
-#: src/project-view.vala:504
+#: src/project-view.vala:507
 msgid "File"
 msgstr ""
 
-#: src/project-view.vala:508
+#: src/project-view.vala:511
 msgid "Validate"
 msgstr ""
 
-#: src/project-view.vala:510
+#: src/project-view.vala:513
 msgid "Check the Compose Configuration"
 msgstr ""
 
-#: src/project-view.vala:514
+#: src/project-view.vala:517
 msgid "Discard Changes"
 msgstr ""
 
-#: src/project-view.vala:516
+#: src/project-view.vala:519
 msgid "Save"
 msgstr ""
 
-#: src/project-view.vala:518
+#: src/project-view.vala:521
 msgid "Save (Ctrl+S)"
 msgstr ""
 
-#: src/project-view.vala:562
+#: src/project-view.vala:565
 msgid "All Services"
 msgstr ""
 
-#: src/project-view.vala:563
+#: src/project-view.vala:566
 msgid "Service"
 msgstr ""
 
-#: src/project-view.vala:572
+#: src/project-view.vala:575
 msgid "Show Timestamps"
 msgstr ""
 
-#: src/project-view.vala:576
+#: src/project-view.vala:579
 msgid "Reload Logs"
 msgstr ""
 
-#: src/project-view.vala:581 src/project-view.vala:611
+#: src/project-view.vala:584 src/project-view.vala:614
 msgid "Clear"
 msgstr ""
 
-#: src/project-view.vala:603
+#: src/project-view.vala:606
 msgid "Output of the commands run on this project"
 msgstr ""
 
-#: src/project-view.vala:738
+#: src/project-view.vala:747
 msgid "No services defined"
 msgstr ""
 
-#: src/project-view.vala:747
+#: src/project-view.vala:756
 #, c-format
 msgid "Service “%s” started"
 msgstr ""
 
-#: src/project-view.vala:748
+#: src/project-view.vala:757
 #, c-format
 msgid "Could not start “%s”"
 msgstr ""
 
-#: src/project-view.vala:752
+#: src/project-view.vala:761
 #, c-format
 msgid "Service “%s” stopped"
 msgstr ""
 
-#: src/project-view.vala:753
+#: src/project-view.vala:762
 #, c-format
 msgid "Could not stop “%s”"
 msgstr ""
 
-#: src/project-view.vala:757
+#: src/project-view.vala:766
 #, c-format
 msgid "Service “%s” restarted"
 msgstr ""
 
-#: src/project-view.vala:758
+#: src/project-view.vala:767
 #, c-format
 msgid "Could not restart “%s”"
 msgstr ""
 
-#: src/project-view.vala:783
+#: src/project-view.vala:789
 #, c-format
 msgid ""
 "The data folder “%s” is not a dedicated database folder, so it will not be "
 "emptied."
 msgstr ""
 
-#: src/project-view.vala:814
+#: src/project-view.vala:820
 #, c-format
 msgid "the folder “%s”"
 msgstr ""
 
-#: src/project-view.vala:816
+#: src/project-view.vala:822
 msgid "an unnamed volume"
 msgstr ""
 
-#: src/project-view.vala:818
+#: src/project-view.vala:824
 #, c-format
 msgid "the volume “%s”"
 msgstr ""
 
-#: src/project-view.vala:827
+#: src/project-view.vala:833
 #, c-format
 msgid "and %d more"
 msgstr ""
 
-#: src/project-view.vala:830
+#: src/project-view.vala:836
 #, c-format
 msgid "the scripts in the volume “%s”"
 msgstr ""
 
-#: src/project-view.vala:834
+#: src/project-view.vala:840
 #, c-format
 msgid "Reset Database “%s”?"
 msgstr ""
 
-#: src/project-view.vala:835
+#: src/project-view.vala:841
 #, c-format
 msgid ""
 "All data in this %s database, stored in %s, is deleted permanently. This "
 "cannot be undone."
 msgstr ""
 
-#: src/project-view.vala:836
+#: src/project-view.vala:842
 msgid "The database is then created again, running its init scripts:"
 msgstr ""
 
-#: src/project-view.vala:839
+#: src/project-view.vala:845
 msgid "_Reset Database"
 msgstr ""
 
-#: src/project-view.vala:849
+#: src/project-view.vala:855
 #, c-format
 msgid "Resetting the “%s” database"
 msgstr ""
 
-#: src/project-view.vala:876
+#: src/project-view.vala:882
 msgid "The database was not reset"
 msgstr ""
 
-#: src/project-view.vala:881
+#: src/project-view.vala:887
 #, c-format
 msgid "Database “%s” reset; its init scripts are running"
 msgstr ""
 
-#: src/project-view.vala:885
+#: src/project-view.vala:891
 #, c-format
 msgid "Could not reset the “%s” database"
 msgstr ""
 
-#: src/project-view.vala:952
+#: src/project-view.vala:958
 msgid "Log stream ended"
 msgstr ""
 
-#: src/project-view.vala:1087 src/window.vala:352
+#: src/project-view.vala:1093 src/window.vala:352
 msgid "Save Changes?"
 msgstr ""
 
-#: src/project-view.vala:1088
+#: src/project-view.vala:1094
 #, c-format
 msgid "“%s” has unsaved changes."
 msgstr ""
 
-#: src/project-view.vala:1091 src/window.vala:355
+#: src/project-view.vala:1097 src/window.vala:355
 msgid "_Discard"
 msgstr ""
 
-#: src/project-view.vala:1092 src/window.vala:356
+#: src/project-view.vala:1098 src/window.vala:356
 msgid "_Save"
 msgstr ""
 
-#: src/project-view.vala:1123
+#: src/project-view.vala:1129
 #, c-format
 msgid "Could not save: %s"
 msgstr ""
 
-#: src/project-view.vala:1127
+#: src/project-view.vala:1133
 #, c-format
 msgid "Saved “%s”"
 msgstr ""
 
-#: src/project-view.vala:1141
+#: src/project-view.vala:1147
 msgid "The configuration is valid"
 msgstr ""
 
@@ -896,38 +896,48 @@ msgstr[1] ""
 msgid "No Volumes"
 msgstr ""
 
-#: src/service-row.vala:61
+#: src/service-row.vala:67 src/service-row.vala:215
 msgid "Open in Browser"
 msgstr ""
 
-#: src/service-row.vala:63
+#: src/service-row.vala:78
 msgid "Restart"
 msgstr ""
 
-#: src/service-row.vala:64
+#: src/service-row.vala:79
 msgid "Reset Database from Init Scripts"
 msgstr ""
 
-#: src/service-row.vala:66
+#: src/service-row.vala:81
 msgid "Show Logs"
 msgstr ""
 
-#: src/service-row.vala:73
+#: src/service-row.vala:109
+#, c-format
+msgid "Traefik router “%s”"
+msgstr ""
+
+#: src/service-row.vala:115
+#, c-format
+msgid "Port %d published on this computer"
+msgstr ""
+
+#: src/service-row.vala:154
 #, c-format
 msgid "Reset the %s Database from Its Init Scripts"
 msgstr ""
 
-#: src/service-row.vala:101
+#: src/service-row.vala:190
 #, c-format
 msgid "%s (%d/%d running)"
 msgstr ""
 
-#: src/service-row.vala:116
+#: src/service-row.vala:214
 #, c-format
-msgid "Open http://localhost:%d"
+msgid "Open %s"
 msgstr ""
 
-#: src/service-row.vala:119
+#: src/service-row.vala:218
 msgid "Stop"
 msgstr ""
 
