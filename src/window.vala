@@ -485,7 +485,7 @@ namespace DockStation {
                 _("The project folder, its containers and its volumes will not be deleted.")
             );
             dialog.add_response ("cancel", _("_Cancel"));
-            dialog.add_response ("remove", _("_Remove"));
+            dialog.add_response ("remove", _("_Remove from List"));
             dialog.set_response_appearance ("remove", Adw.ResponseAppearance.DESTRUCTIVE);
             dialog.default_response = "cancel";
             dialog.close_response = "cancel";

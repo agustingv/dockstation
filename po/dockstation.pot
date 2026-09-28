@@ -1,0 +1,1134 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the dockstation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: dockstation\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-28 09:55+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: data/dockstation.desktop.in:2 data/dockstation.metainfo.xml.in:6
+msgid "DockStation"
+msgstr ""
+
+#: data/dockstation.desktop.in:3 data/dockstation.metainfo.xml.in:7
+#: src/application.vala:32
+msgid "Manage and create Docker Compose projects"
+msgstr ""
+
+#. Translators: Search terms to find this application. Do NOT translate or localize the semicolons.
+#: data/dockstation.desktop.in:10
+msgid "docker;compose;container;devops;"
+msgstr ""
+
+#: data/dockstation.metainfo.xml.in:9
+msgid ""
+"DockStation keeps all your Docker Compose projects in one place. Start, stop "
+"and restart services, follow their logs, edit the configuration and create "
+"new projects from ready-made templates."
+msgstr ""
+
+#: data/dockstation.metainfo.xml.in:16
+msgid "Agustin Garcia"
+msgstr ""
+
+#: data/dockstation.metainfo.xml.in:31
+msgid "First release."
+msgstr ""
+
+#: src/new-project-dialog.vala:25
+msgid "New Project"
+msgstr ""
+
+#: src/new-project-dialog.vala:28 src/project-view.vala:242
+#: src/project-view.vala:278 src/project-view.vala:838
+#: src/project-view.vala:1090 src/resources-view.vala:370 src/window.vala:448
+#: src/window.vala:487
+msgid "_Cancel"
+msgstr ""
+
+#: src/new-project-dialog.vala:31 src/window.vala:449
+msgid "C_reate"
+msgstr ""
+
+#. General
+#: src/new-project-dialog.vala:43
+msgid "Project Name"
+msgstr ""
+
+#: src/new-project-dialog.vala:52 src/new-project-dialog.vala:233
+msgid "Choose Location"
+msgstr ""
+
+#: src/new-project-dialog.vala:59 src/project-view.vala:433
+msgid "Location"
+msgstr ""
+
+#: src/new-project-dialog.vala:75 src/new-project-dialog.vala:93
+msgid "Template"
+msgstr ""
+
+#: src/new-project-dialog.vala:81
+msgid "Host Port"
+msgstr ""
+
+#: src/new-project-dialog.vala:82
+msgid "Port published on this computer"
+msgstr ""
+
+#: src/new-project-dialog.vala:87
+msgid "PHP Version"
+msgstr ""
+
+#: src/new-project-dialog.vala:91
+msgid "Install Composer"
+msgstr ""
+
+#. Options
+#: src/new-project-dialog.vala:101
+msgid "Start After Creating"
+msgstr ""
+
+#: src/new-project-dialog.vala:102
+msgid "Pull or build the images and start the services"
+msgstr ""
+
+#: src/new-project-dialog.vala:176
+#, c-format
+msgid "Already included in the %s image"
+msgstr ""
+
+#: src/new-project-dialog.vala:179
+#, c-format
+msgid "Required by %s"
+msgstr ""
+
+#: src/new-project-dialog.vala:182
+msgid "Add Composer to the image to manage PHP dependencies"
+msgstr ""
+
+#: src/new-project-dialog.vala:215
+msgid "This project is already in the list"
+msgstr ""
+
+#: src/new-project-dialog.vala:217
+msgid "The folder already exists and is not empty"
+msgstr ""
+
+#: src/project.vala:12 src/service-row.vala:99 src/service-row.vala:112
+msgid "Not created"
+msgstr ""
+
+#: src/project.vala:14
+msgid "Stopped"
+msgstr ""
+
+#: src/project.vala:16
+#, c-format
+msgid "%d of %d running"
+msgstr ""
+
+#: src/project.vala:18
+#, c-format
+msgid "%d container running"
+msgid_plural "%d containers running"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/project.vala:20
+msgid "Unknown"
+msgstr ""
+
+#: src/project-view.vala:17
+msgid "Compose"
+msgstr ""
+
+#: src/project-view.vala:17
+msgid "Dockerfiles"
+msgstr ""
+
+#: src/project-view.vala:132 src/window.vala:409
+msgid "Project started"
+msgstr ""
+
+#: src/project-view.vala:132 src/window.vala:410
+msgid "Could not start the project"
+msgstr ""
+
+#: src/project-view.vala:133
+msgid "Project stopped"
+msgstr ""
+
+#: src/project-view.vala:133
+msgid "Could not stop the project"
+msgstr ""
+
+#: src/project-view.vala:134
+msgid "Project restarted"
+msgstr ""
+
+#: src/project-view.vala:134
+msgid "Could not restart the project"
+msgstr ""
+
+#: src/project-view.vala:135
+msgid "Containers removed"
+msgstr ""
+
+#: src/project-view.vala:135 src/project-view.vala:249
+msgid "Could not take the project down"
+msgstr ""
+
+#: src/project-view.vala:136
+msgid "Images pulled"
+msgstr ""
+
+#: src/project-view.vala:136
+msgid "Could not pull images"
+msgstr ""
+
+#: src/project-view.vala:137
+msgid "Images built"
+msgstr ""
+
+#: src/project-view.vala:137
+msgid "Could not build images"
+msgstr ""
+
+#: src/project-view.vala:199
+#, c-format
+msgid "No compose file found in %s"
+msgstr ""
+
+#: src/project-view.vala:213 src/project-view.vala:876
+msgid "Done"
+msgstr ""
+
+#: src/project-view.vala:216 src/project-view.vala:795
+#, c-format
+msgid "Exited with status %d"
+msgstr ""
+
+#: src/project-view.vala:239
+msgid "Remove Containers and Volumes?"
+msgstr ""
+
+#: src/project-view.vala:240
+msgid ""
+"This runs “docker compose down --volumes”. All data stored in the project’s "
+"named volumes will be permanently deleted."
+msgstr ""
+
+#: src/project-view.vala:243 src/resources-view.vala:424
+#: src/resources-view.vala:440 src/resources-view.vala:459
+#: src/resources-view.vala:468
+msgid "_Remove"
+msgstr ""
+
+#: src/project-view.vala:249 src/project-view.vala:294
+msgid "Containers and volumes removed"
+msgstr ""
+
+#: src/project-view.vala:257
+msgid "Remove Containers and Volumes"
+msgstr ""
+
+#: src/project-view.vala:258
+msgid ""
+"Also deletes locally built images and all data in the volumes, such as "
+"databases"
+msgstr ""
+
+#: src/project-view.vala:263
+msgid "Move Folder to Trash"
+msgstr ""
+
+#: src/project-view.vala:273
+#, c-format
+msgid "Delete “%s”?"
+msgstr ""
+
+#: src/project-view.vala:274
+msgid ""
+"The project will be removed from the list. Data in volumes cannot be "
+"recovered."
+msgstr ""
+
+#: src/project-view.vala:279 src/resources-view.vala:450
+#: src/resources-view.vala:477
+msgid "_Delete"
+msgstr ""
+
+#: src/project-view.vala:295
+msgid "Could not remove the containers; the project was not deleted"
+msgstr ""
+
+#: src/project-view.vala:311
+#, c-format
+msgid "Could not move the folder to the Trash: %s"
+msgstr ""
+
+#: src/project-view.vala:347 src/project-view.vala:456
+msgid "Services"
+msgstr ""
+
+#: src/project-view.vala:348
+msgid "Configuration"
+msgstr ""
+
+#: src/project-view.vala:349
+msgid "Logs"
+msgstr ""
+
+#: src/project-view.vala:350
+msgid "Output"
+msgstr ""
+
+#: src/project-view.vala:360 src/service-row.vala:62 src/service-row.vala:119
+msgid "Start"
+msgstr ""
+
+#: src/project-view.vala:363
+msgid "Create and Start All Services"
+msgstr ""
+
+#: src/project-view.vala:369
+msgid "Stop All Services"
+msgstr ""
+
+#: src/project-view.vala:373
+msgid "Restart All Services"
+msgstr ""
+
+#: src/project-view.vala:378
+msgid "_Pull Images"
+msgstr ""
+
+#: src/project-view.vala:379
+msgid "_Build Images"
+msgstr ""
+
+#: src/project-view.vala:382
+msgid "_Remove Containers"
+msgstr ""
+
+#: src/project-view.vala:383
+msgid "Remove Containers and _Volumes…"
+msgstr ""
+
+#: src/project-view.vala:386
+msgid "_Open Folder"
+msgstr ""
+
+#: src/project-view.vala:387
+msgid "Remove _from List…"
+msgstr ""
+
+#: src/project-view.vala:388
+msgid "_Delete Project…"
+msgstr ""
+
+#: src/project-view.vala:394
+msgid "Project Menu"
+msgstr ""
+
+#: src/project-view.vala:427
+msgid "Open Folder"
+msgstr ""
+
+#: src/project-view.vala:440
+msgid "Status"
+msgstr ""
+
+#: src/project-view.vala:449 src/resources-view.vala:128
+msgid "Refresh"
+msgstr ""
+
+#: src/project-view.vala:504
+msgid "File"
+msgstr ""
+
+#: src/project-view.vala:508
+msgid "Validate"
+msgstr ""
+
+#: src/project-view.vala:510
+msgid "Check the Compose Configuration"
+msgstr ""
+
+#: src/project-view.vala:514
+msgid "Discard Changes"
+msgstr ""
+
+#: src/project-view.vala:516
+msgid "Save"
+msgstr ""
+
+#: src/project-view.vala:518
+msgid "Save (Ctrl+S)"
+msgstr ""
+
+#: src/project-view.vala:562
+msgid "All Services"
+msgstr ""
+
+#: src/project-view.vala:563
+msgid "Service"
+msgstr ""
+
+#: src/project-view.vala:572
+msgid "Show Timestamps"
+msgstr ""
+
+#: src/project-view.vala:576
+msgid "Reload Logs"
+msgstr ""
+
+#: src/project-view.vala:581 src/project-view.vala:611
+msgid "Clear"
+msgstr ""
+
+#: src/project-view.vala:603
+msgid "Output of the commands run on this project"
+msgstr ""
+
+#: src/project-view.vala:738
+msgid "No services defined"
+msgstr ""
+
+#: src/project-view.vala:747
+#, c-format
+msgid "Service “%s” started"
+msgstr ""
+
+#: src/project-view.vala:748
+#, c-format
+msgid "Could not start “%s”"
+msgstr ""
+
+#: src/project-view.vala:752
+#, c-format
+msgid "Service “%s” stopped"
+msgstr ""
+
+#: src/project-view.vala:753
+#, c-format
+msgid "Could not stop “%s”"
+msgstr ""
+
+#: src/project-view.vala:757
+#, c-format
+msgid "Service “%s” restarted"
+msgstr ""
+
+#: src/project-view.vala:758
+#, c-format
+msgid "Could not restart “%s”"
+msgstr ""
+
+#: src/project-view.vala:783
+#, c-format
+msgid ""
+"The data folder “%s” is not a dedicated database folder, so it will not be "
+"emptied."
+msgstr ""
+
+#: src/project-view.vala:814
+#, c-format
+msgid "the folder “%s”"
+msgstr ""
+
+#: src/project-view.vala:816
+msgid "an unnamed volume"
+msgstr ""
+
+#: src/project-view.vala:818
+#, c-format
+msgid "the volume “%s”"
+msgstr ""
+
+#: src/project-view.vala:827
+#, c-format
+msgid "and %d more"
+msgstr ""
+
+#: src/project-view.vala:830
+#, c-format
+msgid "the scripts in the volume “%s”"
+msgstr ""
+
+#: src/project-view.vala:834
+#, c-format
+msgid "Reset Database “%s”?"
+msgstr ""
+
+#: src/project-view.vala:835
+#, c-format
+msgid ""
+"All data in this %s database, stored in %s, is deleted permanently. This "
+"cannot be undone."
+msgstr ""
+
+#: src/project-view.vala:836
+msgid "The database is then created again, running its init scripts:"
+msgstr ""
+
+#: src/project-view.vala:839
+msgid "_Reset Database"
+msgstr ""
+
+#: src/project-view.vala:849
+#, c-format
+msgid "Resetting the “%s” database"
+msgstr ""
+
+#: src/project-view.vala:876
+msgid "The database was not reset"
+msgstr ""
+
+#: src/project-view.vala:881
+#, c-format
+msgid "Database “%s” reset; its init scripts are running"
+msgstr ""
+
+#: src/project-view.vala:885
+#, c-format
+msgid "Could not reset the “%s” database"
+msgstr ""
+
+#: src/project-view.vala:952
+msgid "Log stream ended"
+msgstr ""
+
+#: src/project-view.vala:1087 src/window.vala:352
+msgid "Save Changes?"
+msgstr ""
+
+#: src/project-view.vala:1088
+#, c-format
+msgid "“%s” has unsaved changes."
+msgstr ""
+
+#: src/project-view.vala:1091 src/window.vala:355
+msgid "_Discard"
+msgstr ""
+
+#: src/project-view.vala:1092 src/window.vala:356
+msgid "_Save"
+msgstr ""
+
+#: src/project-view.vala:1123
+#, c-format
+msgid "Could not save: %s"
+msgstr ""
+
+#: src/project-view.vala:1127
+#, c-format
+msgid "Saved “%s”"
+msgstr ""
+
+#: src/project-view.vala:1141
+msgid "The configuration is valid"
+msgstr ""
+
+#: src/resources.vala:93
+msgid "Could not read Docker disk usage"
+msgstr ""
+
+#: src/resources-view.vala:88
+msgid "Containers"
+msgstr ""
+
+#: src/resources-view.vala:89
+msgid "Images"
+msgstr ""
+
+#: src/resources-view.vala:90
+msgid "Volumes"
+msgstr ""
+
+#: src/resources-view.vala:93
+msgid "Calculating Disk Usage…"
+msgstr ""
+
+#: src/resources-view.vala:94
+msgid "Docker is measuring containers, images and volumes"
+msgstr ""
+
+#: src/resources-view.vala:100
+msgid "Could Not Read Docker Resources"
+msgstr ""
+
+#: src/resources-view.vala:102
+msgid "_Retry"
+msgstr ""
+
+#: src/resources-view.vala:113
+msgid "Search by name, image or project"
+msgstr ""
+
+#: src/resources-view.vala:123
+msgid "Search"
+msgstr ""
+
+#: src/resources-view.vala:149 src/window.vala:148 src/window.vala:310
+msgid "Docker Resources"
+msgstr ""
+
+#: src/resources-view.vala:277
+msgid "No Results Found"
+msgstr ""
+
+#: src/resources-view.vala:278
+msgid "Try a different search"
+msgstr ""
+
+#: src/resources-view.vala:294
+#, c-format
+msgid "%d item"
+msgid_plural "%d items"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/resources-view.vala:297
+#, c-format
+msgid "Compose project “%s”"
+msgstr ""
+
+#: src/resources-view.vala:304
+msgid "Open Project"
+msgstr ""
+
+#: src/resources-view.vala:326
+msgid "Total Size"
+msgstr ""
+
+#: src/resources-view.vala:327
+msgid "In Use"
+msgstr ""
+
+#: src/resources-view.vala:327
+#, c-format
+msgid "%d of %d"
+msgstr ""
+
+#: src/resources-view.vala:328
+msgid "Reclaimable"
+msgstr ""
+
+#: src/resources-view.vala:334
+msgid "unknown"
+msgstr ""
+
+#: src/resources-view.vala:408
+#, c-format
+msgid "%s · %s freed"
+msgstr ""
+
+#: src/resources-view.vala:411
+msgid "The command failed"
+msgstr ""
+
+#: src/resources-view.vala:422
+msgid ""
+"The stopped container is removed. Its image and volumes are kept, and the "
+"project creates it again the next time it starts."
+msgstr ""
+
+#: src/resources-view.vala:423
+msgid ""
+"The stopped container is removed, including any changes made inside it. Its "
+"image and volumes are kept."
+msgstr ""
+
+#: src/resources-view.vala:424
+#, c-format
+msgid "Remove Container “%s”?"
+msgstr ""
+
+#: src/resources-view.vala:425 src/resources-view.vala:441 src/window.vala:500
+#, c-format
+msgid "Removed “%s”"
+msgstr ""
+
+#: src/resources-view.vala:431
+msgid "The project will pull or build it again the next time it starts."
+msgstr ""
+
+#: src/resources-view.vala:432
+msgid ""
+"If it came from a registry, it can be downloaded again. Images built on this "
+"computer have to be built again."
+msgstr ""
+
+#: src/resources-view.vala:434
+#, c-format
+msgid "Frees about %s."
+msgstr ""
+
+#: src/resources-view.vala:440
+#, c-format
+msgid "Remove Image “%s”?"
+msgstr ""
+
+#: src/resources-view.vala:446
+msgid ""
+"All data stored in it, such as databases, is deleted permanently. This "
+"cannot be undone."
+msgstr ""
+
+#: src/resources-view.vala:448
+#, c-format
+msgid "Frees %s."
+msgstr ""
+
+#: src/resources-view.vala:450
+#, c-format
+msgid "Delete Volume “%s”?"
+msgstr ""
+
+#: src/resources-view.vala:451 src/window.vala:478
+#, c-format
+msgid "Deleted “%s”"
+msgstr ""
+
+#: src/resources-view.vala:457
+#, c-format
+msgid "Remove %d Stopped Container?"
+msgid_plural "Remove All %d Stopped Containers?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/resources-view.vala:458
+#, c-format
+msgid ""
+"Docker estimates %s can be freed. Images and volumes are kept, and projects "
+"can create their containers again."
+msgstr ""
+
+#: src/resources-view.vala:460
+msgid "Stopped containers removed"
+msgstr ""
+
+#: src/resources-view.vala:466
+#, c-format
+msgid "Remove %d Unused Image?"
+msgid_plural "Remove All %d Unused Images?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/resources-view.vala:467
+#, c-format
+msgid ""
+"Removes every image that no container uses, including images built by your "
+"projects; they are pulled or built again when needed. Docker estimates %s "
+"can be freed."
+msgstr ""
+
+#: src/resources-view.vala:469
+msgid "Unused images removed"
+msgstr ""
+
+#: src/resources-view.vala:475
+#, c-format
+msgid "Delete %d Unused Volume?"
+msgid_plural "Delete All %d Unused Volumes?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/resources-view.vala:476
+#, c-format
+msgid ""
+"All data in these volumes, such as databases, is deleted permanently. This "
+"cannot be undone. Volumes attached to a container, even a stopped one, are "
+"kept. Docker estimates %s can be freed."
+msgstr ""
+
+#: src/resources-view.vala:478
+msgid "Unused volumes deleted"
+msgstr ""
+
+#: src/resources-view.vala:484
+msgid "Clear the Build Cache?"
+msgstr ""
+
+#: src/resources-view.vala:485
+#, c-format
+msgid ""
+"Docker estimates %s can be freed. The next image builds will take longer."
+msgstr ""
+
+#: src/resources-view.vala:486
+msgid "_Clear"
+msgstr ""
+
+#: src/resources-view.vala:487
+msgid "Build cache cleared"
+msgstr ""
+
+#: src/resources-view.vala:500 src/resources-view.vala:546
+#: src/resources-view.vala:613
+msgid "Not Part of a Compose Project"
+msgstr ""
+
+#: src/resources-view.vala:508
+msgid "Remove Container"
+msgstr ""
+
+#: src/resources-view.vala:516
+msgid ""
+"Container sizes only count the data each container wrote; its image is "
+"counted under Images."
+msgstr ""
+
+#: src/resources-view.vala:524
+msgid "Remove _Stopped…"
+msgstr ""
+
+#: src/resources-view.vala:525
+#, c-format
+msgid "Remove %d stopped container"
+msgid_plural "Remove %d stopped containers"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/resources-view.vala:529
+msgid "No Containers"
+msgstr ""
+
+#: src/resources-view.vala:544
+msgid "Shared by Several Projects"
+msgstr ""
+
+#: src/resources-view.vala:548
+msgid "Unused Images"
+msgstr ""
+
+#: src/resources-view.vala:553 src/resources-view.vala:616
+#, c-format
+msgid "Used by %d container"
+msgid_plural "Used by %d containers"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/resources-view.vala:554 src/resources-view.vala:617
+msgid "Not used by any container"
+msgstr ""
+
+#: src/resources-view.vala:555
+#, c-format
+msgid "Created %s"
+msgstr ""
+
+#: src/resources-view.vala:557
+#, c-format
+msgid "%s not shared with other images"
+msgstr ""
+
+#: src/resources-view.vala:565
+#, c-format
+msgid "Projects: %s"
+msgstr ""
+
+#: src/resources-view.vala:570
+msgid "Remove Image"
+msgstr ""
+
+#: src/resources-view.vala:578
+msgid ""
+"Images share layers, so group totals can add up to more than the total size."
+msgstr ""
+
+#: src/resources-view.vala:586
+msgid "Remove _Unused…"
+msgstr ""
+
+#: src/resources-view.vala:587
+#, c-format
+msgid "Remove %d image no container uses"
+msgid_plural "Remove %d images no container uses"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/resources-view.vala:594
+msgid "Build Cache"
+msgstr ""
+
+#: src/resources-view.vala:596
+msgid "Clear Build Cache"
+msgstr ""
+
+#: src/resources-view.vala:601
+msgid "No Images"
+msgstr ""
+
+#: src/resources-view.vala:620
+msgid "Delete Volume"
+msgstr ""
+
+#: src/resources-view.vala:628
+msgid "Volumes hold persistent data, such as databases."
+msgstr ""
+
+#: src/resources-view.vala:636
+msgid "Delete _Unused…"
+msgstr ""
+
+#: src/resources-view.vala:637
+#, c-format
+msgid "Delete %d volume no container uses"
+msgid_plural "Delete %d volumes no container uses"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/resources-view.vala:641
+msgid "No Volumes"
+msgstr ""
+
+#: src/service-row.vala:61
+msgid "Open in Browser"
+msgstr ""
+
+#: src/service-row.vala:63
+msgid "Restart"
+msgstr ""
+
+#: src/service-row.vala:64
+msgid "Reset Database from Init Scripts"
+msgstr ""
+
+#: src/service-row.vala:66
+msgid "Show Logs"
+msgstr ""
+
+#: src/service-row.vala:73
+#, c-format
+msgid "Reset the %s Database from Its Init Scripts"
+msgstr ""
+
+#: src/service-row.vala:101
+#, c-format
+msgid "%s (%d/%d running)"
+msgstr ""
+
+#: src/service-row.vala:116
+#, c-format
+msgid "Open http://localhost:%d"
+msgstr ""
+
+#: src/service-row.vala:119
+msgid "Stop"
+msgstr ""
+
+#: src/templates.vala:119
+msgid "Blank"
+msgstr ""
+
+#: src/templates.vala:119
+msgid "A minimal compose file to start from scratch"
+msgstr ""
+
+#: src/templates.vala:134
+msgid "Static Website"
+msgstr ""
+
+#: src/templates.vala:134
+msgid "Nginx serving the files in ./html"
+msgstr ""
+
+#: src/templates.vala:161
+msgid "PostgreSQL + Adminer"
+msgstr ""
+
+#: src/templates.vala:161
+msgid "A PostgreSQL database with a web administration UI"
+msgstr ""
+
+#: src/templates.vala:199
+msgid "PHP App"
+msgstr ""
+
+#: src/templates.vala:199
+msgid "PHP with Apache, serving the files in ./src"
+msgstr ""
+
+#: src/templates.vala:200
+msgid "The PHP version of the image"
+msgstr ""
+
+#: src/templates.vala:250
+msgid "WordPress"
+msgstr ""
+
+#: src/templates.vala:250
+msgid "WordPress with a MariaDB database"
+msgstr ""
+
+#: src/templates.vala:252
+msgid "Some plugins may not support the newest PHP yet"
+msgstr ""
+
+#: src/templates.vala:300
+msgid "Drupal"
+msgstr ""
+
+#: src/templates.vala:300
+msgid "Drupal 11 with a MariaDB database"
+msgstr ""
+
+#: src/templates.vala:302
+msgid "Drupal 11 requires PHP 8.3 or newer"
+msgstr ""
+
+#: src/templates.vala:366
+msgid "Node.js App"
+msgstr ""
+
+#: src/templates.vala:366
+msgid "A Node.js HTTP server built from a Dockerfile"
+msgstr ""
+
+#: src/templates.vala:408
+msgid "Python App"
+msgstr ""
+
+#: src/templates.vala:408
+msgid "A Flask application served by Gunicorn"
+msgstr ""
+
+#: src/templates.vala:440
+msgid "Symfony"
+msgstr ""
+
+#: src/templates.vala:440
+msgid "A Symfony app with PostgreSQL, created on first start"
+msgstr ""
+
+#: src/templates.vala:442
+msgid "Symfony 8 requires PHP 8.4 or newer; older versions get Symfony 7.4 LTS"
+msgstr ""
+
+#. Sidebar
+#: src/window.vala:78
+msgid "_New Project…"
+msgstr ""
+
+#: src/window.vala:79
+msgid "_Add Existing Project…"
+msgstr ""
+
+#: src/window.vala:83
+msgid "Add Project"
+msgstr ""
+
+#: src/window.vala:87
+msgid "_Refresh"
+msgstr ""
+
+#: src/window.vala:88
+msgid "Show _Docker Resources"
+msgstr ""
+
+#: src/window.vala:89
+msgid "_About DockStation"
+msgstr ""
+
+#: src/window.vala:94
+msgid "Main Menu"
+msgstr ""
+
+#: src/window.vala:101
+msgid "Retry"
+msgstr ""
+
+#: src/window.vala:109
+msgid "_New Project"
+msgstr ""
+
+#: src/window.vala:115
+msgid "_Add Existing"
+msgstr ""
+
+#: src/window.vala:126
+msgid "No Projects"
+msgstr ""
+
+#: src/window.vala:127
+msgid "Create a new Compose project or add an existing folder"
+msgstr ""
+
+#: src/window.vala:153
+msgid "Containers, images and volumes, and the disk space they use"
+msgstr ""
+
+#: src/window.vala:177
+msgid "No Project Selected"
+msgstr ""
+
+#: src/window.vala:178
+msgid "Select a project to manage its services"
+msgstr ""
+
+#: src/window.vala:184 src/window.vala:330
+msgid "Projects"
+msgstr ""
+
+#: src/window.vala:353
+#, c-format
+msgid "“%s” in “%s” has unsaved changes."
+msgstr ""
+
+#: src/window.vala:406
+#, c-format
+msgid "Created “%s”"
+msgstr ""
+
+#: src/window.vala:417
+msgid "Select a Docker Compose Project Folder"
+msgstr ""
+
+#: src/window.vala:431
+msgid "Only local folders are supported"
+msgstr ""
+
+#: src/window.vala:438
+#, c-format
+msgid "“%s” is already in the list"
+msgstr ""
+
+#: src/window.vala:445
+msgid "No Compose File Found"
+msgstr ""
+
+#: src/window.vala:446
+#, c-format
+msgid "“%s” does not contain a compose.yaml file. Create an empty one?"
+msgstr ""
+
+#: src/window.vala:484
+#, c-format
+msgid "Remove “%s” from the List?"
+msgstr ""
+
+#: src/window.vala:485
+msgid "The project folder, its containers and its volumes will not be deleted."
+msgstr ""
+
+#: src/window.vala:488
+msgid "_Remove from List"
+msgstr ""
+
+#: src/window.vala:553
+msgid "Docker is not installed"
+msgstr ""

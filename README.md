@@ -211,6 +211,25 @@ rm -rf ~/.var/app/es.agustin_garcia.DockStation    # optional: the Flatpak's pro
   flatpak run --command=flatpak-spawn es.agustin_garcia.DockStation --host docker compose version
   ```
 
+## Translations
+
+DockStation is available in English and Spanish (`po/es.po`). It follows the desktop language automatically. To try another language, run:
+
+```sh
+LANGUAGE=es ./build/src/dockstation
+```
+
+When run from the build folder, the app reads translations from the install location. So `meson install` it first, or use the Flatpak.
+
+After changing text in the code, update the template and the translations:
+
+```sh
+meson compile -C build dockstation-pot        # regenerates po/dockstation.pot
+meson compile -C build dockstation-update-po  # merges new strings into po/*.po
+```
+
+To add a language, create `po/<code>.po` from `po/dockstation.pot` (for example with `msginit -l fr -i po/dockstation.pot -o po/fr.po`), add the code to `po/LINGUAS`, and run `meson setup --reconfigure build`. Check a translation with `msgfmt --check --statistics po/<code>.po`.
+
 ## Keyboard shortcuts
 
 | Shortcut | Action |
