@@ -9,11 +9,48 @@ A GNOME application written in Vala with GTK4 and libadwaita to manage and creat
 - **Project list**: add existing Compose folders or create new ones. Each project shows its live state: running, partly running, stopped or not created.
 - **Services**: every service shows its state, status and published ports, with buttons to start, stop and restart it, open it in the browser and view its logs.
 - **Project actions**: start (`up -d`), stop, restart, pull images, build images, remove containers (`down`), and remove containers and volumes (`down -v`, confirmation required).
-- **Configuration editor**: edit `compose.yaml`, override files, `.env` and `Dockerfile`. Ctrl+S saves, and the configuration is checked with `docker compose config` after each save. The Tab key inserts spaces and new lines keep the YAML indentation.
+- **Reset a database**: database services that run init scripts from `/docker-entrypoint-initdb.d` get a **Reset Database** button. This covers the official PostgreSQL, MySQL/MariaDB and MongoDB images, with the scripts mounted as a folder or as single files. After confirmation, DockStation stops and removes the container, empties its data (the volume or the host folder), and starts it again. The image's own entrypoint then re-runs every init script (`.sql`, `.sql.gz`, `.sh`, …) with the same settings as the first time, and the Logs tab shows the progress. All existing data is deleted, and the dialog lists the scripts that will run. Folders that clearly hold more than the database (your home folder, the project folder, or any folder containing them) are never emptied.
+- **Configuration editor**: edit the project's files, grouped in two sections:
+  - **Compose**: `compose.yaml`, override files and `.env`. The configuration is checked with `docker compose config` after each save.
+  - **Dockerfiles**: every `Dockerfile`, `Dockerfile.*`, `*.Dockerfile` and `Containerfile` in the project, found by searching up to four folders deep. Dependency and cache folders (`node_modules`, `vendor`, `.git`, …) and symlinks are skipped. Refresh (Ctrl+R) searches again.
+  
+  Ctrl+S saves. The Tab key inserts spaces and new lines keep the indentation.
 - **Logs**: follows logs live, for all services or a single one, with optional timestamps.
 - **Output**: full output of every command DockStation runs. It opens automatically when a command fails.
 - **Remove from list**: forgets a project and leaves its files, containers and volumes alone.
 - **Delete project**: after confirmation, removes the containers, volumes and locally built images, and moves the folder to the Trash. Each step can be turned off in the dialog. If removing the containers fails, the folder is left untouched.
+
+### Docker Resources
+
+The optional **Docker Resources** entry at the bottom of the sidebar, below the projects, shows everything Docker stores and the disk space it takes. It only loads when you click it, never at startup. To hide or show the entry, use **Show Docker Resources** in the main menu. The choice is saved in `~/.config/dockstation/settings.ini`.
+
+The page has three tabs:
+
+- **Containers**: the space each container has written, with its state and image.
+- **Images**: size, how much is not shared with other images, when it was created and how many containers use it.
+- **Volumes**: size and whether any container uses it.
+
+Each tab starts with Docker's totals: total size, how many are in use, and how much is reclaimable. Below, items are grouped by Compose project, largest first:
+
+- Projects in your list show their DockStation name and an **Open** button (→).
+- Images used by more than one project go in **Shared by Several Projects**, and images nothing uses go in **Unused Images**.
+- Anything not created by Compose goes in **Not Part of a Compose Project**.
+
+**Free up disk space.** Every deletion asks for confirmation first and says how much space it frees.
+
+| What | Where | Docker command |
+| --- | --- | --- |
+| One stopped container | Trash button on the container | `docker container rm` |
+| One image no container uses | Trash button on the image | `docker image rm` |
+| One volume no container uses | Trash button on the volume | `docker volume rm` |
+| All stopped containers | **Remove Stopped…** (Containers tab) | `docker container prune` |
+| All images no container uses | **Remove Unused…** (Images tab) | `docker image prune --all` |
+| All volumes no container uses | **Delete Unused…** (Volumes tab) | `docker volume prune --all` |
+| The build cache | Trash button on **Build Cache** (Images tab) | `docker builder prune --all` |
+
+Running containers, and images or volumes that a container uses (even a stopped one), cannot be deleted from here. Deleting a volume permanently deletes its data, such as databases, and the dialog says so.
+
+Search (or just start typing) filters by name, image or project. Measuring sizes can take a few seconds, so the page refreshes only when opened or when you press Refresh (Ctrl+R).
 
 ### Create projects
 
@@ -200,6 +237,7 @@ rm -rf ~/.var/app/es.agustin_garcia.DockStation    # optional: the Flatpak's pro
 | `src/project.vala`, `src/project-store.vala` | Project model and persistence |
 | `src/templates.vala` | Project templates and the PHP `Dockerfile` generator |
 | `src/new-project-dialog.vala` | New Project dialog |
+| `src/resources.vala`, `src/resources-view.vala` | Docker Resources page: disk usage of containers, images and volumes by project |
 | `src/service-row.vala`, `src/project-row.vala`, `src/log-view.vala` | Widgets |
 | `src/utils.vala` | Helpers: port parsing, folder names, secrets |
 | `data/` | Desktop entry, AppStream metadata and app icon |

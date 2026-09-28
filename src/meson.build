@@ -13,6 +13,10 @@ dockstation_sources = files(
   'log-view.vala',
   'templates.vala',
   'new-project-dialog.vala',
+  'resources.vala',
+  'resources-view.vala',
+  'settings.vala',
+  'database-init.vala',
 )
 
 dockstation_deps = [

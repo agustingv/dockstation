@@ -1,4 +1,23 @@
 namespace DockStation {
+    public enum EditorFileKind {
+        COMPOSE,
+        DOCKERFILE,
+    }
+
+    /* A file listed in the Configuration tab, relative to the project folder. */
+    public class EditorFile : Object {
+        public string path { get; construct; }
+        public EditorFileKind kind { get; construct; }
+
+        public EditorFile (string path, EditorFileKind kind) {
+            Object (path: path, kind: kind);
+        }
+
+        public string section_title {
+            owned get { return kind == EditorFileKind.COMPOSE ? _("Compose") : _("Dockerfiles"); }
+        }
+    }
+
     public class ProjectView : Adw.BreakpointBin {
         public Project project { get; construct; }
 
@@ -9,7 +28,7 @@ namespace DockStation {
         public signal void containers_changed ();
 
         private const string[] COMPOSE_ACTIONS = { "up", "stop", "restart", "down", "pull", "build", "down-volumes", "delete" };
-        private const string PS_FORMAT = "{{.Service}}\t{{.Name}}\t{{.State}}\t{{.Status}}\t{{.Ports}}";
+        private const string PS_FORMAT = "{{.Service}}\t{{.Name}}\t{{.State}}\t{{.Status}}\t{{.Ports}}\t{{.ID}}";
 
         private Cancellable cancellable = new Cancellable ();
         private SimpleActionGroup actions;
@@ -27,11 +46,15 @@ namespace DockStation {
         private string[] service_names = {};
         private bool config_loaded = false;
         private bool refreshing_services = false;
+        // Databases that can be reset, keyed by container ID; inspected again when the IDs change.
+        private HashTable<string, DatabaseInit> databases = new HashTable<string, DatabaseInit> (str_hash, str_equal);
+        private string inspected_containers = "";
         private bool config_reload_pending = false;
 
         // Editor page
-        private string[] editor_files = {};
-        private Gtk.StringList file_model;
+        private GLib.ListStore file_store;
+        private Gtk.SortListModel file_list;
+        private Cancellable? dockerfile_search = null;
         private Gtk.DropDown file_dropdown;
         private Gtk.TextBuffer editor_buffer;
         private Gtk.TextView editor_view;
@@ -63,7 +86,7 @@ namespace DockStation {
         }
 
         public string editing_file_name {
-            owned get { return editing_path != null ? Path.get_basename (editing_path) : ""; }
+            owned get { return editing_path != null ? File.new_for_path (project.path).get_relative_path (File.new_for_path (editing_path)) ?? Path.get_basename (editing_path) : ""; }
         }
 
         construct {
@@ -84,6 +107,9 @@ namespace DockStation {
         /* Must be called before the view is discarded, to stop background processes. */
         public void shutdown () {
             cancellable.cancel ();
+            if (dockerfile_search != null) {
+                dockerfile_search.cancel ();
+            }
             if (logs_cancellable != null) {
                 logs_cancellable.cancel ();
             }
@@ -95,6 +121,7 @@ namespace DockStation {
 
         public void reload () {
             refresh_services.begin (true);
+            rescan_dockerfiles.begin ();
         }
 
         /* ---------------------------------------------------------------- actions */
@@ -437,8 +464,45 @@ namespace DockStation {
         }
 
         private Gtk.Widget build_editor_page () {
-            file_model = new Gtk.StringList (null);
-            file_dropdown = new Gtk.DropDown (file_model, null) { tooltip_text = _("File") };
+            // The store is kept grouped by kind; the section sorter only marks where sections start.
+            file_store = new GLib.ListStore (typeof (EditorFile));
+            file_list = new Gtk.SortListModel (file_store, null) {
+                section_sorter = new Gtk.CustomSorter ((a, b) => {
+                    return (int) ((EditorFile) a).kind - (int) ((EditorFile) b).kind;
+                }),
+            };
+
+            var item_factory = new Gtk.SignalListItemFactory ();
+            item_factory.setup.connect ((obj) => {
+                ((Gtk.ListItem) obj).child = new Gtk.Label (null) {
+                    xalign = 0,
+                    ellipsize = Pango.EllipsizeMode.MIDDLE,
+                    max_width_chars = 36,
+                };
+            });
+            item_factory.bind.connect ((obj) => {
+                var item = (Gtk.ListItem) obj;
+                var label = (Gtk.Label) item.child;
+                label.label = ((EditorFile) item.item).path;
+                label.tooltip_text = label.label;
+            });
+
+            var header_factory = new Gtk.SignalListItemFactory ();
+            header_factory.setup.connect ((obj) => {
+                var label = new Gtk.Label (null) { xalign = 0 };
+                label.add_css_class ("heading");
+                ((Gtk.ListHeader) obj).child = label;
+            });
+            header_factory.bind.connect ((obj) => {
+                var header = (Gtk.ListHeader) obj;
+                ((Gtk.Label) header.child).label = ((EditorFile) header.item).section_title;
+            });
+
+            file_dropdown = new Gtk.DropDown (file_list, null) {
+                factory = item_factory,
+                header_factory = header_factory,
+                tooltip_text = _("File"),
+            };
             file_dropdown.notify["selected"].connect (on_file_selected);
 
             var validate_button = new Gtk.Button.with_label (_("Validate")) {
@@ -608,10 +672,11 @@ namespace DockStation {
                             infos[fields[0]] = info;
                             order += fields[0];
                         }
-                        info.add_container (fields[2], fields[3], fields[4]);
+                        info.add_container (fields.length > 5 ? fields[5] : "", fields[2], fields[3], fields[4]);
                     }
                 }
 
+                yield detect_databases (infos, order);
                 update_service_rows (infos, order);
             } catch (IOError.CANCELLED e) {
                 return;
@@ -623,6 +688,27 @@ namespace DockStation {
             if (config_reload_pending) {
                 config_reload_pending = false;
                 yield refresh_services (true);
+            }
+        }
+
+        /* Finds database containers that have init scripts (see DatabaseInit). */
+        private async void detect_databases (HashTable<string, ServiceInfo> infos, string[] order) {
+            string[] ids = {};
+            foreach (unowned string name in order) {
+                var info = infos[name];
+                if (info.containers == 1 && info.container_id != "") {
+                    ids += info.container_id;
+                }
+            }
+            var key = string.joinv (",", ids);
+            if (key == inspected_containers) {
+                return;
+            }
+            try {
+                databases = yield DatabaseInit.inspect (ids, cancellable);
+                inspected_containers = key;
+            } catch (Error e) {
+                // Not critical: the reset button just stays hidden.
             }
         }
 
@@ -644,6 +730,8 @@ namespace DockStation {
                     service_rows[name] = row;
                 }
                 row.update (infos[name]);
+                var info = infos[name];
+                row.show_database_reset (info.containers == 1 ? databases[info.container_id] : null);
             }
 
             if (order.length == 0 && services_group.description == null) {
@@ -675,6 +763,126 @@ namespace DockStation {
                 case "open":
                     open_browser (row.host_port);
                     break;
+                case "reset-database":
+                    if (row.database != null) {
+                        reset_database.begin (service, row.database);
+                    }
+                    break;
+            }
+        }
+
+        /* --------------------------------------------------------- database reset */
+
+        /* Refuses to empty folders that obviously hold more than the database. */
+        private string? unsafe_data_folder (string source) {
+            var folder = File.new_for_path (source);
+            var home = File.new_for_path (Environment.get_home_dir ());
+            var project_folder = File.new_for_path (project.path);
+            if (folder.get_parent () == null || folder.equal (home) || folder.equal (project_folder)
+                || home.has_prefix (folder) || project_folder.has_prefix (folder)) {
+                return _("The data folder “%s” is not a dedicated database folder, so it will not be emptied.")
+                    .printf (Utils.home_relative (source));
+            }
+            return null;
+        }
+
+        private async bool run_step (owned string[] docker_args) throws Error {
+            output_view.append ("$ docker %s\n".printf (string.joinv (" ", docker_args)));
+            int status = yield Docker.stream (project.path, docker_args, (line) => {
+                output_view.append (line + "\n");
+            }, cancellable);
+            if (status != 0) {
+                output_view.append ("✘ " + _("Exited with status %d").printf (status) + "\n\n");
+            }
+            return status == 0;
+        }
+
+        private async void reset_database (string service, DatabaseInit database) {
+            if (busy) {
+                return;
+            }
+            if (database.data_type == "bind") {
+                var problem = unsafe_data_folder (database.data_source);
+                if (problem != null) {
+                    toast (problem);
+                    return;
+                }
+            }
+
+            string storage;
+            if (database.data_type == "bind") {
+                storage = _("the folder “%s”").printf (Utils.home_relative (database.data_source));
+            } else if (database.data_is_anonymous_volume) {
+                storage = _("an unnamed volume");
+            } else {
+                storage = _("the volume “%s”").printf (database.data_volume);
+            }
+
+            string scripts = "";
+            const int MAX_LISTED = 8;
+            for (int i = 0; i < database.init_files.length && i < MAX_LISTED; i++) {
+                scripts += "\n• " + Path.get_basename (database.init_files[i]);
+            }
+            if (database.init_files.length > MAX_LISTED) {
+                scripts += "\n• " + _("and %d more").printf (database.init_files.length - MAX_LISTED);
+            }
+            foreach (unowned string volume in database.init_volumes) {
+                scripts += "\n• " + _("the scripts in the volume “%s”").printf (volume);
+            }
+
+            var dialog = new Adw.AlertDialog (
+                _("Reset Database “%s”?").printf (service),
+                _("All data in this %s database, stored in %s, is deleted permanently. This cannot be undone.").printf (database.engine, storage)
+                + "\n\n" + _("The database is then created again, running its init scripts:") + scripts
+            );
+            dialog.add_response ("cancel", _("_Cancel"));
+            dialog.add_response ("reset", _("_Reset Database"));
+            dialog.set_response_appearance ("reset", Adw.ResponseAppearance.DESTRUCTIVE);
+            dialog.default_response = "cancel";
+            dialog.close_response = "cancel";
+            if ((yield dialog.choose (this, null)) != "reset") {
+                return;
+            }
+
+            set_busy (true);
+            stack.visible_child_name = "output";
+            output_view.append ("# " + _("Resetting the “%s” database").printf (service) + "\n");
+            bool success = false;
+            try {
+                // 1. Stop and remove the container; --volumes also drops an unnamed data volume.
+                if ((yield run_step (compose_args ({ "stop", service })))
+                    && (yield run_step (compose_args ({ "rm", "--force", "--volumes", service })))) {
+                    // 2. Empty the data, so the entrypoint initialises the database again.
+                    bool emptied = true;
+                    if (database.data_type == "volume" && !database.data_is_anonymous_volume) {
+                        emptied = yield run_step ({ "volume", "rm", database.data_volume });
+                    } else if (database.data_type == "bind") {
+                        // Run as root inside the database image: the files belong to its user.
+                        emptied = yield run_step ({
+                            "run", "--rm", "--entrypoint", "sh", "--volume", database.data_source + ":/reset",
+                            database.image_id, "-c", "find /reset -mindepth 1 -delete"
+                        });
+                    }
+                    // 3. Start it again, even after a failure, so the service is not left down.
+                    bool started = yield run_step (compose_args ({ "up", "--detach", service }));
+                    success = emptied && started;
+                }
+            } catch (IOError.CANCELLED e) {
+                return;
+            } catch (Error e) {
+                output_view.append (e.message + "\n\n");
+            }
+            set_busy (false);
+            output_view.append ((success ? "✔ " + _("Done") : "✘ " + _("The database was not reset")) + "\n\n");
+
+            containers_changed ();
+            yield refresh_services (false);
+            if (success) {
+                toast (_("Database “%s” reset; its init scripts are running").printf (service));
+                // The init scripts' progress shows up in the logs.
+                show_logs_for (service);
+            } else {
+                toast (_("Could not reset the “%s” database").printf (service));
             }
         }
 
@@ -752,13 +960,81 @@ namespace DockStation {
 
         /* ----------------------------------------------------------------- editor */
 
+        private EditorFile file_at (uint position) {
+            return (EditorFile) file_list.get_item (position);
+        }
+
+        private uint position_of (string? path) {
+            for (uint i = 0; path != null && i < file_list.get_n_items (); i++) {
+                if (file_at (i).path == path) {
+                    return i;
+                }
+            }
+            return Gtk.INVALID_LIST_POSITION;
+        }
+
         private void reload_editor_files () {
-            editor_files = project.editable_files ();
+            Object[] files = {};
+            foreach (unowned string path in project.editable_files ()) {
+                files += new EditorFile (path, EditorFileKind.COMPOSE);
+            }
             switching_file = true;
-            file_model.splice (0, file_model.get_n_items (), editor_files);
+            file_store.splice (0, file_store.get_n_items (), files);
             file_dropdown.selected = 0;
             switching_file = false;
             load_file_at (0);
+            rescan_dockerfiles.begin ();
+        }
+
+        /* Searches the project for Dockerfiles and lists them in their own section. */
+        private async void rescan_dockerfiles () {
+            if (dockerfile_search != null) {
+                dockerfile_search.cancel ();
+            }
+            var search = new Cancellable ();
+            dockerfile_search = search;
+
+            var dockerfiles = yield project.find_dockerfiles (search);
+            if (search.is_cancelled ()) {
+                return;
+            }
+
+            uint first = 0;
+            while (first < file_store.get_n_items ()
+                   && ((EditorFile) file_store.get_item (first)).kind == EditorFileKind.COMPOSE) {
+                first++;
+            }
+
+            // Keep a Dockerfile that is open in the editor, even if it was moved or deleted.
+            var editing = editing_file_name;
+            string[] paths = dockerfiles;
+            uint editing_position = position_of (editing);
+            if (editing_position != Gtk.INVALID_LIST_POSITION
+                && file_at (editing_position).kind == EditorFileKind.DOCKERFILE
+                && !(editing in paths)) {
+                paths += editing;
+            }
+
+            string[] current = {};
+            for (uint i = first; i < file_store.get_n_items (); i++) {
+                current += ((EditorFile) file_store.get_item (i)).path;
+            }
+            if (string.joinv ("\n", current) == string.joinv ("\n", paths)) {
+                return;
+            }
+
+            Object[] items = {};
+            foreach (unowned string path in paths) {
+                items += new EditorFile (path, EditorFileKind.DOCKERFILE);
+            }
+            switching_file = true;
+            file_store.splice (first, file_store.get_n_items () - first, items);
+            var position = position_of (editing);
+            if (position != Gtk.INVALID_LIST_POSITION) {
+                current_file_index = position;
+                file_dropdown.selected = position;
+            }
+            switching_file = false;
         }
 
         private void set_dirty (bool value) {
@@ -769,7 +1045,7 @@ namespace DockStation {
 
         private void load_file_at (uint index) {
             current_file_index = index;
-            editing_path = Path.build_filename (project.path, editor_files[index]);
+            editing_path = Path.build_filename (project.path, file_at (index).path);
 
             string contents = "";
             if (FileUtils.test (editing_path, FileTest.EXISTS)) {
@@ -850,7 +1126,8 @@ namespace DockStation {
             set_dirty (false);
             toast (_("Saved “%s”").printf (editing_file_name));
 
-            if (editing_file_name != "Dockerfile") {
+            // Only compose files and .env affect `docker compose config`.
+            if (file_at (current_file_index).kind == EditorFileKind.COMPOSE) {
                 validate.begin (true);
             }
         }

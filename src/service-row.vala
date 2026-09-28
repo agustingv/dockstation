@@ -7,13 +7,17 @@ namespace DockStation {
         public string state = "";
         public string status = "";
         public string ports = "";
+        public string container_id = "";   // First container; replicas are not resettable one by one.
 
         public ServiceInfo (string name) {
             this.name = name;
         }
 
-        public void add_container (string state, string status, string ports) {
+        public void add_container (string id, string state, string status, string ports) {
             containers++;
+            if (containers == 1) {
+                container_id = id;
+            }
             if (state == "running") {
                 running++;
             }
@@ -37,7 +41,11 @@ namespace DockStation {
         private Gtk.Button open_button;
         private Gtk.Button toggle_button;
         private Gtk.Button restart_button;
+        private Gtk.Button reset_button;
         private bool running = false;
+
+        /* Set when the service is a database that can be reset from its init scripts. */
+        public DatabaseInit? database { get; private set; default = null; }
 
         public ServiceRow (string service) {
             Object (service: service);
@@ -53,7 +61,17 @@ namespace DockStation {
             open_button = add_button ("web-browser-symbolic", _("Open in Browser"), "open");
             toggle_button = add_button ("media-playback-start-symbolic", _("Start"), "toggle");
             restart_button = add_button ("system-reboot-symbolic", _("Restart"), "restart");
+            reset_button = add_button ("document-revert-symbolic", _("Reset Database from Init Scripts"), "reset-database");
+            reset_button.visible = false;
             add_button ("utilities-terminal-symbolic", _("Show Logs"), "logs");
+        }
+
+        public void show_database_reset (DatabaseInit? database) {
+            this.database = database;
+            reset_button.visible = database != null;
+            if (database != null) {
+                reset_button.tooltip_text = _("Reset the %s Database from Its Init Scripts").printf (database.engine);
+            }
         }
 
         private Gtk.Button add_button (string icon, string tooltip, string action) {
@@ -104,6 +122,7 @@ namespace DockStation {
         public void set_actions_sensitive (bool sensitive) {
             toggle_button.sensitive = sensitive;
             restart_button.sensitive = sensitive;
+            reset_button.sensitive = sensitive;
         }
     }
 }

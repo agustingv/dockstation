@@ -95,6 +95,47 @@ namespace DockStation.Utils {
         return 0;
     }
 
+    /* Parses Docker's human sizes, which use decimal units: "0B", "57.3kB", "2.93GB". Returns -1 if unknown. */
+    public int64 parse_size (string text) {
+        var trimmed = text.strip ();
+        int end = 0;
+        while (end < trimmed.length && (trimmed[end].isdigit () || trimmed[end] == '.')) {
+            end++;
+        }
+        if (end == 0) {
+            return -1;
+        }
+        double value = double.parse (trimmed.substring (0, end));  // g_ascii_strtod: locale independent
+        double multiplier;
+        switch (trimmed.substring (end).strip ().up ()) {
+            case "B": multiplier = 1; break;
+            case "KB": multiplier = 1e3; break;
+            case "MB": multiplier = 1e6; break;
+            case "GB": multiplier = 1e9; break;
+            case "TB": multiplier = 1e12; break;
+            case "PB": multiplier = 1e15; break;
+            default: return -1;
+        }
+        return (int64) (value * multiplier);
+    }
+
+    public string format_size (int64 bytes) {
+        return bytes < 0 ? "–" : GLib.format_size ((uint64) bytes);
+    }
+
+    /* The project name Compose derives from a folder name. */
+    public string compose_project_name (string folder_name) {
+        var builder = new StringBuilder ();
+        var lower = folder_name.down ();
+        for (int i = 0; i < lower.length; i++) {
+            char c = lower[i];
+            if (c.isalnum () || ((c == '-' || c == '_') && builder.len > 0)) {
+                builder.append_c (c);
+            }
+        }
+        return builder.str;
+    }
+
     public string home_relative (string path) {
         var home = Environment.get_home_dir ();
         if (path == home) {

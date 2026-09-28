@@ -11,6 +11,12 @@ namespace DockStation {
         private Adw.ToastOverlay toast_overlay;
         private Adw.Banner docker_banner;
         private ProjectView? current_view = null;
+        private Gtk.ListBox tools_list;
+        private Gtk.Widget tools_area;
+        private AppSettings settings;
+        private bool opening_tool = false;
+        private ResourcesView? resources_view = null;
+        private bool syncing_selection = false;
         private bool refreshing = false;
         private bool close_confirmed = false;
         private bool opening_initial_project = false;
@@ -30,6 +36,7 @@ namespace DockStation {
 
             store = new ProjectStore ();
             store.load ();
+            settings = new AppSettings ();
 
             ActionEntry[] entries = {
                 { "new-project", on_new_project },
@@ -37,6 +44,15 @@ namespace DockStation {
                 { "refresh", on_refresh },
             };
             add_action_entries (entries, this);
+
+            var show_resources_action = new SimpleAction.stateful (
+                "show-resources", null, new Variant.boolean (settings.show_resources));
+            show_resources_action.change_state.connect ((action, state) => {
+                action.set_state (state);
+                settings.show_resources = state.get_boolean ();
+                update_tools_visibility ();
+            });
+            add_action (show_resources_action);
 
             build_ui ();
 
@@ -69,6 +85,7 @@ namespace DockStation {
 
             var main_menu = new Menu ();
             main_menu.append (_("_Refresh"), "win.refresh");
+            main_menu.append (_("Show _Docker Resources"), "win.show-resources");
             main_menu.append (_("_About DockStation"), "app.about");
             var menu_button = new Gtk.MenuButton () {
                 icon_name = "open-menu-symbolic",
@@ -120,7 +137,36 @@ namespace DockStation {
             }, "list");
             sidebar_stack.add_named (empty_sidebar, "empty");
 
-            var sidebar_toolbar = new Adw.ToolbarView () { content = sidebar_stack };
+            // Optional entries below the project list.
+            var resources_row_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 12) {
+                margin_top = 6,
+                margin_bottom = 6,
+                margin_start = 6,
+                margin_end = 6,
+            };
+            resources_row_box.append (new Gtk.Image.from_icon_name ("drive-harddisk-symbolic"));
+            resources_row_box.append (new Gtk.Label (_("Docker Resources")) { xalign = 0, hexpand = true });
+            tools_list = new Gtk.ListBox ();
+            tools_list.add_css_class ("navigation-sidebar");
+            tools_list.append (new Gtk.ListBoxRow () {
+                child = resources_row_box,
+                tooltip_text = _("Containers, images and volumes, and the disk space they use"),
+            });
+            // Open only on an explicit click or Enter: keyboard focus landing on the
+            // row when the window opens must not start measuring disk usage.
+            tools_list.row_selected.connect (on_tool_selected);
+            tools_list.row_activated.connect (on_tool_activated);
+
+            var tools_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
+            tools_box.append (new Gtk.Separator (Gtk.Orientation.HORIZONTAL));
+            tools_box.append (tools_list);
+            tools_area = tools_box;
+
+            var sidebar_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
+            sidebar_box.append (sidebar_stack);
+            sidebar_box.append (tools_area);
+
+            var sidebar_toolbar = new Adw.ToolbarView () { content = sidebar_box };
             sidebar_toolbar.add_top_bar (sidebar_header);
             sidebar_toolbar.add_top_bar (docker_banner);
 
@@ -153,6 +199,18 @@ namespace DockStation {
 
             store.projects.items_changed.connect (update_sidebar_stack);
             update_sidebar_stack ();
+            update_tools_visibility ();
+        }
+
+        private void update_tools_visibility () {
+            tools_area.visible = settings.show_resources;
+            // Hiding the entry while its page is open goes back to the placeholder.
+            if (!settings.show_resources && tools_list.get_selected_row () != null) {
+                syncing_selection = true;
+                tools_list.unselect_all ();
+                syncing_selection = false;
+                show_project.begin (null);
+            }
         }
 
         private void update_sidebar_stack () {
@@ -166,11 +224,91 @@ namespace DockStation {
         /* ----------------------------------------------------------- navigation */
 
         private void on_row_selected (Gtk.ListBoxRow? row) {
+            if (syncing_selection) {
+                return;
+            }
+            if (row != null) {
+                syncing_selection = true;
+                tools_list.unselect_all ();
+                syncing_selection = false;
+            } else if (tools_list.get_selected_row () != null) {
+                return;
+            }
             var project = row != null ? ((ProjectRow) row).project : null;
             if (current_view != null && current_view.project == project) {
                 return;
             }
             show_project.begin (project);
+        }
+
+        /* Selection alone (for example, from keyboard focus) is undone; see on_tool_activated. */
+        private void on_tool_selected (Gtk.ListBoxRow? row) {
+            if (syncing_selection || opening_tool || row == null) {
+                return;
+            }
+            syncing_selection = true;
+            tools_list.unselect_all ();
+            syncing_selection = false;
+        }
+
+        private void on_tool_activated (Gtk.ListBoxRow row) {
+            opening_tool = true;
+            tools_list.select_row (row);
+            opening_tool = false;
+
+            syncing_selection = true;
+            project_list.unselect_all ();
+            syncing_selection = false;
+            if (resources_view == null || content_page.child != resources_view) {
+                show_resources.begin ();
+            }
+        }
+
+        /*
+         * Closes the open project view, asking about unsaved changes first.
+         * Callers must only `yield` this when `leaving_needs_confirmation` is true:
+         * yielding an async call always resumes on a later main-loop iteration,
+         * and switching views has to be immediate in the common case (for example,
+         * "Start After Creating" uses the new view right after selecting it).
+         */
+        private async void leave_project_view () {
+            if (current_view == null) {
+                return;
+            }
+            var old_view = current_view;
+            current_view = null;
+            if (old_view.has_unsaved_changes) {
+                yield confirm_unsaved (old_view);
+            }
+            old_view.shutdown ();
+        }
+
+        private bool leaving_needs_confirmation {
+            get { return current_view != null && current_view.has_unsaved_changes; }
+        }
+
+        private void close_project_view () {
+            if (current_view != null) {
+                current_view.shutdown ();
+                current_view = null;
+            }
+        }
+
+        private async void show_resources () {
+            if (leaving_needs_confirmation) {
+                yield leave_project_view ();
+            } else {
+                close_project_view ();
+            }
+            if (resources_view == null) {
+                resources_view = new ResourcesView (store);
+                resources_view.toast.connect (show_toast);
+                resources_view.open_project.connect (select_project);
+            }
+            resources_view.reload ();
+            content_page.child = resources_view;
+            content_page.title = _("Docker Resources");
+            split_view.show_content = true;
         }
 
         private void select_project (Project project) {
@@ -181,14 +319,10 @@ namespace DockStation {
         }
 
         private async void show_project (Project? project) {
-            if (current_view != null) {
-                var old_view = current_view;
-                current_view = null;
-                // Only yield when needed, so the switch is synchronous in the common case.
-                if (old_view.has_unsaved_changes) {
-                    yield confirm_unsaved (old_view);
-                }
-                old_view.shutdown ();
+            if (leaving_needs_confirmation) {
+                yield leave_project_view ();
+            } else {
+                close_project_view ();
             }
 
             if (project == null) {
@@ -246,6 +380,9 @@ namespace DockStation {
             if (current_view != null) {
                 current_view.shutdown ();
             }
+            if (resources_view != null) {
+                resources_view.shutdown ();
+            }
             return base.close_request ();
         }
 
@@ -255,6 +392,9 @@ namespace DockStation {
             refresh.begin ();
             if (current_view != null) {
                 current_view.reload ();
+            }
+            if (resources_view != null && content_page.child == resources_view) {
+                resources_view.reload ();
             }
         }
 

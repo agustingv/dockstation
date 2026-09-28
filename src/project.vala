@@ -115,10 +115,77 @@ namespace DockStation {
                 }
             }
             files += ".env";
-            if (FileUtils.test (Path.build_filename (path, "Dockerfile"), FileTest.IS_REGULAR)) {
-                files += "Dockerfile";
-            }
             return files;
+        }
+
+        /* ------------------------------------------------------------ Dockerfiles */
+
+        private const int DOCKERFILE_SEARCH_DEPTH = 4;
+        private const int MAX_DOCKERFILES = 50;
+        // Dependency, VCS and cache folders: large, and never hold the project's own Dockerfiles.
+        private const string[] SKIPPED_DIRECTORIES = {
+            ".git", ".hg", ".svn", ".cache", ".idea", ".vscode", ".flatpak", ".flatpak-builder",
+            "node_modules", "vendor", ".venv", "venv", "__pycache__", "target"
+        };
+
+        public static bool is_dockerfile_name (string name) {
+            var lower = name.down ();
+            return lower == "dockerfile" || lower == "containerfile"
+                || lower.has_prefix ("dockerfile.") || lower.has_suffix (".dockerfile");
+        }
+
+        /*
+         * Searches the project folder for Dockerfiles, without following symlinks.
+         * Returns paths relative to the project folder, shallowest first.
+         */
+        public async string[] find_dockerfiles (Cancellable? cancellable = null) {
+            var root = File.new_for_path (path);
+            var found = new GenericArray<string> ();
+            yield search_dockerfiles (root, root, 0, found, cancellable);
+
+            found.sort ((a, b) => {
+                int depth = a.split ("/").length - b.split ("/").length;
+                return depth != 0 ? depth : strcmp (a, b);
+            });
+            string[] result = {};
+            for (uint i = 0; i < found.length; i++) {
+                result += found[i];
+            }
+            return result;
+        }
+
+        private async void search_dockerfiles (File root, File dir, int depth, GenericArray<string> found,
+                                               Cancellable? cancellable) {
+            var subdirectories = new GenericArray<File> ();
+            try {
+                var enumerator = yield dir.enumerate_children_async (
+                    FileAttribute.STANDARD_NAME + "," + FileAttribute.STANDARD_TYPE,
+                    FileQueryInfoFlags.NOFOLLOW_SYMLINKS, Priority.LOW, cancellable);
+                while (true) {
+                    var infos = yield enumerator.next_files_async (100, Priority.LOW, cancellable);
+                    if (infos.length () == 0) {
+                        break;
+                    }
+                    foreach (var info in infos) {
+                        var name = info.get_name ();
+                        var type = info.get_file_type ();
+                        if (type == FileType.DIRECTORY) {
+                            if (depth < DOCKERFILE_SEARCH_DEPTH && !(name in SKIPPED_DIRECTORIES)) {
+                                subdirectories.add (dir.get_child (name));
+                            }
+                        } else if (type == FileType.REGULAR && is_dockerfile_name (name) && found.length < MAX_DOCKERFILES) {
+                            found.add (root.get_relative_path (dir.get_child (name)));
+                        }
+                    }
+                }
+            } catch (Error e) {
+                // Unreadable folder or cancelled search: keep what was found so far.
+                return;
+            }
+
+            for (uint i = 0; i < subdirectories.length && found.length < MAX_DOCKERFILES; i++) {
+                yield search_dockerfiles (root, subdirectories[i], depth + 1, found, cancellable);
+            }
         }
     }
 }
