@@ -1,0 +1,9 @@
+data/dockstation.desktop.in
+data/dockstation.metainfo.xml.in
+src/application.vala
+src/new-project-dialog.vala
+src/project.vala
+src/project-view.vala
+src/service-row.vala
+src/templates.vala
+src/window.vala

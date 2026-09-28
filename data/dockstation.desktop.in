@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=DockStation
+Comment=Manage and create Docker Compose projects
+Exec=dockstation
+Icon=@APP_ID@
+Terminal=false
+Type=Application
+Categories=GTK;GNOME;Development;
+# Translators: Search terms to find this application. Do NOT translate or localize the semicolons.
+Keywords=docker;compose;container;devops;
+StartupNotify=true

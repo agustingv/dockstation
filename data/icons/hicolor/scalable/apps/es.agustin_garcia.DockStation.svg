@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#62a0ea"/>
+      <stop offset="1" stop-color="#1a5fb4"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="10" width="112" height="108" rx="22" fill="#1c4f8f"/>
+  <rect x="8" y="8" width="112" height="106" rx="22" fill="url(#sea)"/>
+  <!-- containers -->
+  <g stroke="#00000022" stroke-width="2">
+    <rect x="22" y="62" width="26" height="20" rx="3" fill="#f6d32d"/>
+    <rect x="51" y="62" width="26" height="20" rx="3" fill="#ffffff"/>
+    <rect x="80" y="62" width="26" height="20" rx="3" fill="#57e389"/>
+    <rect x="36" y="39" width="26" height="20" rx="3" fill="#ffffff"/>
+    <rect x="65" y="39" width="26" height="20" rx="3" fill="#ff7800"/>
+    <rect x="51" y="16" width="26" height="20" rx="3" fill="#dc8add"/>
+  </g>
+  <g stroke="#0000002a" stroke-width="2" stroke-linecap="round">
+    <path d="M29 66v12M35 66v12M41 66v12M58 66v12M64 66v12M70 66v12M87 66v12M93 66v12M99 66v12"/>
+    <path d="M43 43v12M49 43v12M55 43v12M72 43v12M78 43v12M84 43v12M58 20v12M64 20v12M70 20v12"/>
+  </g>
+  <!-- dock / hull -->
+  <path d="M16 86h96l-8 16H24z" fill="#241f31"/>
+  <path d="M8 104c10 0 10-5 20-5s10 5 20 5 10-5 20-5 10 5 20 5 10-5 20-5 12 5 12 5v-1 10a22 22 0 0 1-22 0H30A22 22 0 0 1 8 114z" fill="#99c1f1" opacity=".9"/>
+</svg>
