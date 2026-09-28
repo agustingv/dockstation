@@ -69,9 +69,110 @@ meson setup build --prefix="$HOME/.local"   # or: meson configure build --prefix
 ninja -C build install
 ```
 
-### Flatpak
+## Flatpak
 
-When DockStation runs inside Flatpak, it forwards `docker` commands to the host through `flatpak-spawn --host`. A Flatpak manifest is not included yet. One would need `--talk-name=org.freedesktop.Flatpak` and access to the project folders (for example, `--filesystem=home`).
+The Flatpak manifest is [`es.agustin_garcia.DockStation.json`](es.agustin_garcia.DockStation.json). It builds DockStation with the GNOME 51 runtime, which includes GTK 4.24, libadwaita 1.10 and the Vala compiler.
+
+### 1. Install the tools
+
+Install `flatpak` and `flatpak-builder`, then add Flathub, where the GNOME runtime comes from.
+
+```sh
+sudo apt install flatpak flatpak-builder        # Debian / Ubuntu
+sudo dnf install flatpak flatpak-builder        # Fedora
+
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+```
+
+Docker also has to be installed on the host and usable by your user, with no `sudo` needed. Check with:
+
+```sh
+docker compose version
+docker ps
+```
+
+### 2. Build and install
+
+From the project folder:
+
+```sh
+flatpak-builder --user --install --force-clean --install-deps-from=flathub .flatpak/build es.agustin_garcia.DockStation.json
+```
+
+- `--user` installs DockStation for your user only, with no administrator password.
+- `--install-deps-from=flathub` downloads the GNOME 51 runtime and SDK the first time. The runtime alone is about 420 MB to download and 1.1 GB installed, and the SDK adds more. Later builds reuse them.
+- The build folders `.flatpak/` and `.flatpak-builder/` are ignored by git.
+
+### 3. Run
+
+Open **DockStation** from Activities, or run:
+
+```sh
+flatpak run es.agustin_garcia.DockStation
+```
+
+### Update after changing the code
+
+Run the same command again. The installed Flatpak does not change until you rebuild it.
+
+```sh
+flatpak-builder --user --install --force-clean .flatpak/build es.agustin_garcia.DockStation.json
+```
+
+### Share it as a single file
+
+Create a bundle that other people can install without building:
+
+```sh
+flatpak-builder --user --force-clean --repo=repo .flatpak/build es.agustin_garcia.DockStation.json
+flatpak build-bundle repo dockstation.flatpak es.agustin_garcia.DockStation \
+    --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
+```
+
+To install the bundle, run the command below. The GNOME runtime is downloaded from Flathub if it is missing. The `repo/` folder and `*.flatpak` files are ignored by git.
+
+```sh
+flatpak install --user dockstation.flatpak
+```
+
+### Uninstall
+
+```sh
+flatpak uninstall --user es.agustin_garcia.DockStation
+flatpak uninstall --user --unused                  # also removes runtimes no other app uses
+rm -rf ~/.var/app/es.agustin_garcia.DockStation    # optional: the Flatpak's project list
+```
+
+### How the sandbox affects DockStation
+
+| Permission | Why |
+| --- | --- |
+| `--talk-name=org.freedesktop.Flatpak` | Runs `docker` on the host through `flatpak-spawn --host`. The sandbox therefore does not limit what DockStation can run on the host. |
+| `--filesystem=home` | Reads and edits projects in your home folder and creates new ones there. |
+| `--socket=wayland`, `--socket=fallback-x11`, `--device=dri`, `--share=ipc` | Display and graphics |
+
+- **Projects outside your home folder** are not accessible. Grant access to another folder with:
+
+  ```sh
+  flatpak override --user --filesystem=/srv/projects es.agustin_garcia.DockStation
+  ```
+
+- **Separate project list**: the Flatpak stores its list in `~/.var/app/es.agustin_garcia.DockStation/config/dockstation/projects.ini`, not in `~/.config/dockstation/`. To reuse the projects from a native build, copy the file:
+
+  ```sh
+  mkdir -p ~/.var/app/es.agustin_garcia.DockStation/config/dockstation
+  cp ~/.config/dockstation/projects.ini ~/.var/app/es.agustin_garcia.DockStation/config/dockstation/
+  ```
+
+### Troubleshooting
+
+- **"Docker is not installed" or "permission denied" banner**: check that `docker ps` works in a normal terminal without `sudo`. If it does not, add your user to the `docker` group (`sudo usermod -aG docker $USER`), then log out and back in.
+- **Run the sandboxed app from a terminal to see its messages**: `flatpak run es.agustin_garcia.DockStation`
+- **Test Docker access from inside the sandbox**:
+
+  ```sh
+  flatpak run --command=flatpak-spawn es.agustin_garcia.DockStation --host docker compose version
+  ```
 
 ## Keyboard shortcuts
 
@@ -85,7 +186,7 @@ When DockStation runs inside Flatpak, it forwards `docker` commands to the host 
 
 ## Where data is stored
 
-- The project list: `~/.config/dockstation/projects.ini`.
+- The project list: `~/.config/dockstation/projects.ini`, or `~/.var/app/es.agustin_garcia.DockStation/config/dockstation/projects.ini` for the Flatpak.
 - Everything else lives in each project's folder (`compose.yaml`, `.env`, …) and in Docker.
 
 ## Code layout

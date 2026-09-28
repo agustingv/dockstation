@@ -1,0 +1,41 @@
+{
+    "id": "es.agustin_garcia.DockStation",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "51",
+    "sdk": "org.gnome.Sdk",
+    "command": "dockstation",
+    "finish-args": [
+        "--share=ipc",
+        "--socket=fallback-x11",
+        "--socket=wayland",
+        "--device=dri",
+        "--filesystem=home",
+        "--talk-name=org.freedesktop.Flatpak"
+    ],
+    "cleanup": [
+        "/include",
+        "/lib/pkgconfig",
+        "/share/vala",
+        "*.a",
+        "*.la"
+    ],
+    "modules": [
+        {
+            "name": "dockstation",
+            "buildsystem": "meson",
+            "sources": [
+                {
+                    "type": "dir",
+                    "path": ".",
+                    "skip": [
+                        ".git",
+                        "build",
+                        "_build",
+                        ".flatpak",
+                        ".flatpak-builder"
+                    ]
+                }
+            ]
+        }
+    ]
+}

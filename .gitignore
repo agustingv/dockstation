@@ -10,6 +10,7 @@
 /.flatpak/
 /.flatpak-builder/
 /repo/
+*.flatpak
 
 # Editors and tools
 .vscode/
