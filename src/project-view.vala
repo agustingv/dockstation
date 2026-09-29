@@ -18,6 +18,60 @@ namespace DockStation {
         }
     }
 
+    /* Keeps the previous line's indentation, adding a level after lines that open a block ("key:"). */
+    public class YamlIndenter : Object, GtkSource.Indenter {
+        public bool is_trigger (GtkSource.View view, Gtk.TextIter location, Gdk.ModifierType state, uint keyval) {
+            if ((state & (Gdk.ModifierType.SHIFT_MASK | Gdk.ModifierType.CONTROL_MASK)) != 0) {
+                return false;
+            }
+            return keyval == Gdk.Key.Return || keyval == Gdk.Key.KP_Enter;
+        }
+
+        /* Called with `iter` at the start of the new line. */
+        public void indent (GtkSource.View view, ref Gtk.TextIter iter) {
+            var previous = iter;
+            if (!previous.backward_line ()) {
+                return;
+            }
+            var previous_end = previous;
+            if (!previous_end.ends_line ()) {
+                previous_end.forward_to_line_end ();
+            }
+            var line = previous.get_slice (previous_end);
+
+            var indent = new StringBuilder ();
+            for (int i = 0; i < line.length && (line[i] == ' ' || line[i] == '\t'); i++) {
+                indent.append_c (line[i]);
+            }
+            if (opens_block (line)) {
+                var width = view.indent_width > 0 ? view.indent_width : (int) view.tab_width;
+                indent.append (string.nfill (width, ' '));
+            }
+
+            // Replace the whitespace that followed the cursor, if any.
+            var buffer = view.buffer;
+            var whitespace_end = iter;
+            while (!whitespace_end.ends_line () && (whitespace_end.get_char () == ' ' || whitespace_end.get_char () == '\t')) {
+                whitespace_end.forward_char ();
+            }
+            buffer.delete (ref iter, ref whitespace_end);
+            buffer.insert (ref iter, indent.str, -1);
+        }
+
+        /* "key:" or a block scalar ("key: |", "key: >-"), ignoring trailing comments. */
+        private static bool opens_block (string line) {
+            var text = line.strip ();
+            if (text.has_prefix ("#")) {
+                return false;
+            }
+            var comment = text.index_of (" #");
+            if (comment >= 0) {
+                text = text.substring (0, comment).strip ();
+            }
+            return text.has_suffix (":") || Regex.match_simple ("""(^|:\s)[|>][-+]?$""", text);
+        }
+    }
+
     public class ProjectView : Adw.BreakpointBin {
         public Project project { get; construct; }
 
@@ -59,14 +113,19 @@ namespace DockStation {
         private Gtk.SortListModel file_list;
         private Cancellable? dockerfile_search = null;
         private Gtk.DropDown file_dropdown;
-        private Gtk.TextBuffer editor_buffer;
-        private Gtk.TextView editor_view;
+        private GtkSource.Buffer editor_buffer;
+        private GtkSource.View editor_view;
         private Adw.Banner editor_banner;
         private uint current_file_index = 0;
         private string? editing_path = null;
+        // Identifies the version on disk that was loaded, to detect changes made by other programs.
+        private string? editing_etag = null;
         private bool loading_file = false;
         private bool switching_file = false;
         private bool dirty = false;
+        private bool saving = false;
+        // Bumped on every edit, so a save only clears `dirty` if nothing was typed meanwhile.
+        private uint edit_serial = 0;
 
         // Logs page
         private LogView logs_view;
@@ -120,6 +179,7 @@ namespace DockStation {
                 project.disconnect (status_handler);
                 status_handler = 0;
             }
+            Adw.StyleManager.get_default ().notify["dark"].disconnect (update_editor_scheme);
         }
 
         public void reload () {
@@ -143,7 +203,7 @@ namespace DockStation {
             add_simple_action ("open-folder", open_folder);
             add_simple_action ("remove", () => remove_requested ());
             add_simple_action ("delete", () => delete_project.begin ());
-            add_simple_action ("save-file", save_file);
+            add_simple_action ("save-file", () => save_file.begin ());
             add_simple_action ("revert-file", () => load_file_at (current_file_index));
             add_simple_action ("validate", () => validate.begin (false));
 
@@ -532,23 +592,36 @@ namespace DockStation {
 
             editor_banner = new Adw.Banner ("");
 
-            editor_buffer = new Gtk.TextBuffer (null);
+            editor_buffer = new GtkSource.Buffer (null);
             editor_buffer.changed.connect (() => {
                 if (!loading_file) {
+                    edit_serial++;
                     set_dirty (true);
                 }
             });
 
-            editor_view = new Gtk.TextView.with_buffer (editor_buffer) {
+            update_editor_scheme ();
+            Adw.StyleManager.get_default ().notify["dark"].connect (update_editor_scheme);
+
+            editor_view = new GtkSource.View.with_buffer (editor_buffer) {
                 monospace = true,
                 top_margin = 12,
                 bottom_margin = 12,
-                left_margin = 12,
+                left_margin = 6,
                 right_margin = 12,
+                show_line_numbers = true,
+                highlight_current_line = true,
+                auto_indent = true,
+                indent_on_tab = true,
+                smart_backspace = true,
+                // YAML forbids tabs.
+                insert_spaces_instead_of_tabs = true,
             };
-            var keys = new Gtk.EventControllerKey ();
-            keys.key_pressed.connect (on_editor_key_pressed);
-            editor_view.add_controller (keys);
+            editor_buffer.highlight_matching_brackets = true;
+            // Make tabs visible: they break YAML and are easy to miss.
+            editor_view.space_drawer.set_types_for_locations (GtkSource.SpaceLocationFlags.ALL,
+                                                              GtkSource.SpaceTypeFlags.TAB);
+            editor_view.space_drawer.enable_matrix = true;
 
             var toolbar = new Adw.ToolbarView () {
                 content = new Gtk.ScrolledWindow () { child = editor_view, vexpand = true },
@@ -1051,20 +1124,23 @@ namespace DockStation {
 
         private void load_file_at (uint index) {
             current_file_index = index;
-            editing_path = Path.build_filename (project.path, file_at (index).path);
+            var file = file_at (index);
+            editing_path = Path.build_filename (project.path, file.path);
+            configure_editor_for (file);
 
-            string contents = "";
-            if (FileUtils.test (editing_path, FileTest.EXISTS)) {
-                try {
-                    FileUtils.get_contents (editing_path, out contents);
-                } catch (Error e) {
-                    toast (e.message);
-                }
+            uint8[] contents = {};
+            editing_etag = null;
+            try {
+                File.new_for_path (editing_path).load_contents (null, out contents, out editing_etag);
+            } catch (IOError.NOT_FOUND e) {
+                // Not created yet (e.g. .env): saving creates it.
+            } catch (Error e) {
+                toast (e.message);
             }
 
             loading_file = true;
             editor_buffer.begin_irreversible_action ();
-            editor_buffer.text = contents;
+            editor_buffer.text = contents.length > 0 ? (string) contents : "";
             editor_buffer.end_irreversible_action ();
             loading_file = false;
 
@@ -1074,6 +1150,28 @@ namespace DockStation {
 
             editor_banner.revealed = false;
             set_dirty (false);
+        }
+
+        /* Highlighting and indentation rules depend on the kind of file. */
+        private void configure_editor_for (EditorFile file) {
+            string language_id;
+            if (file.kind == EditorFileKind.DOCKERFILE) {
+                language_id = "docker";
+            } else if (Path.get_basename (file.path) == ".env") {
+                language_id = "sh";
+            } else {
+                language_id = "yaml";
+            }
+            editor_buffer.language = GtkSource.LanguageManager.get_default ().get_language (language_id);
+
+            bool yaml = language_id == "yaml";
+            editor_view.tab_width = yaml ? 2 : 4;
+            editor_view.indenter = yaml ? new YamlIndenter () : null;
+        }
+
+        private void update_editor_scheme () {
+            var scheme_id = Adw.StyleManager.get_default ().dark ? "Adwaita-dark" : "Adwaita";
+            editor_buffer.style_scheme = GtkSource.StyleSchemeManager.get_default ().get_scheme (scheme_id);
         }
 
         private void on_file_selected () {
@@ -1102,89 +1200,187 @@ namespace DockStation {
             dialog.close_response = "cancel";
 
             var response = yield dialog.choose (this, null);
-            if (response == "cancel") {
+            if (response == "cancel" || (response == "save" && !(yield save_file ()))) {
                 switching_file = true;
                 file_dropdown.selected = current_file_index;
                 switching_file = false;
                 return;
             }
-            if (response == "save") {
-                save_file ();
-            }
             load_file_at (target);
         }
 
-        public void save_file () {
+        /* Returns true if the editor holds no unsaved changes afterwards. */
+        public async bool save_file () {
             if (editing_path == null || !dirty) {
-                return;
+                return !dirty;
             }
+            if (saving) {
+                return false;
+            }
+            saving = true;
+            var saved = yield write_editor_file ();
+            saving = false;
+            return saved;
+        }
+
+        private async bool write_editor_file () {
+            var path = editing_path;
+            var name = editing_file_name;
+            var kind = file_at (current_file_index).kind;
+            var serial = edit_serial;
             Gtk.TextIter start, end;
             editor_buffer.get_bounds (out start, out end);
-            var text = editor_buffer.get_text (start, end, true);
+            var contents = new Bytes (editor_buffer.get_text (start, end, true).data);
+            var etag = editing_etag;
 
-            try {
-                // replace_contents keeps the permissions of an existing file (e.g. a 0600 .env)
-                File.new_for_path (editing_path).replace_contents (text.data, null, false, FileCreateFlags.NONE, null);
-            } catch (Error e) {
-                toast (_("Could not save: %s").printf (e.message));
-                return;
+            while (true) {
+                try {
+                    string? new_etag;
+                    // replace_contents keeps the permissions of an existing file (e.g. a 0600 .env).
+                    // With an etag it fails instead of overwriting changes made by another program.
+                    yield File.new_for_path (path).replace_contents_bytes_async (
+                        contents, etag, false, FileCreateFlags.NONE, null, out new_etag);
+                    if (editing_path == path) {
+                        editing_etag = new_etag;
+                    }
+                    break;
+                } catch (IOError.WRONG_ETAG e) {
+                    var response = yield ask_overwrite_changed_file (name);
+                    if (response == "overwrite") {
+                        etag = null;
+                        continue;
+                    }
+                    if (response == "reload" && editing_path == path) {
+                        load_file_at (current_file_index);
+                    }
+                    return !dirty;
+                } catch (Error e) {
+                    toast (_("Could not save: %s").printf (e.message));
+                    return false;
+                }
             }
-            set_dirty (false);
-            toast (_("Saved “%s”").printf (editing_file_name));
+
+            // Keep the file marked as modified if it was edited while saving.
+            if (editing_path == path && edit_serial == serial) {
+                set_dirty (false);
+            }
+            toast (_("Saved “%s”").printf (name));
 
             // Only compose files and .env affect `docker compose config`.
-            if (file_at (current_file_index).kind == EditorFileKind.COMPOSE) {
+            if (kind == EditorFileKind.COMPOSE) {
                 validate.begin (true);
             }
+            return !dirty;
+        }
+
+        private async string ask_overwrite_changed_file (string name) {
+            var dialog = new Adw.AlertDialog (
+                _("File Changed on Disk"),
+                _("“%s” was modified by another program after it was opened. Overwrite it with your version, or reload it and discard your changes?").printf (name)
+            );
+            dialog.add_response ("cancel", _("_Cancel"));
+            dialog.add_response ("reload", _("_Reload"));
+            dialog.add_response ("overwrite", _("_Overwrite"));
+            dialog.set_response_appearance ("reload", Adw.ResponseAppearance.DESTRUCTIVE);
+            dialog.set_response_appearance ("overwrite", Adw.ResponseAppearance.DESTRUCTIVE);
+            dialog.default_response = "cancel";
+            dialog.close_response = "cancel";
+            return yield dialog.choose (this, null);
         }
 
         private async void validate (bool after_save) {
+            string? edited = null;
+            string? copy = null;
             try {
-                var result = yield Docker.run (project.path, compose_args ({ "config", "--quiet" }), cancellable);
+                string[] args = {};
+                // Check the text in the editor, not the file on disk: Compose gets a copy of it instead.
+                if (dirty && file_at (current_file_index).kind == EditorFileKind.COMPOSE) {
+                    edited = editing_path;
+                    args = compose_args_with_copy (edited, out copy);
+                }
+                args += "config";
+                args += "--quiet";
+
+                var result = yield Docker.run (project.path, compose_args (args), cancellable);
                 if (result.success) {
                     editor_banner.revealed = false;
                     if (!after_save) {
                         toast (_("The configuration is valid"));
                     }
-                    reload ();
+                    // The services list reflects the files on disk.
+                    if (copy == null) {
+                        reload ();
+                    }
                 } else {
-                    editor_banner.title = Markup.escape_text (result.stderr_text.strip ());
+                    var message = result.stderr_text.strip ();
+                    if (copy != null) {
+                        message = message.replace (copy, edited)
+                            .replace (Path.get_basename (copy), Path.get_basename (edited));
+                    }
+                    editor_banner.title = Markup.escape_text (message);
                     editor_banner.revealed = true;
                 }
             } catch (IOError.CANCELLED e) {
             } catch (Error e) {
                 toast (e.message);
+            } finally {
+                if (copy != null) {
+                    FileUtils.unlink (copy);
+                }
             }
         }
 
-        /* YAML forbids tabs: indent with spaces and keep indentation on new lines. */
-        private bool on_editor_key_pressed (uint keyval, uint keycode, Gdk.ModifierType state) {
-            if ((state & (Gdk.ModifierType.CONTROL_MASK | Gdk.ModifierType.ALT_MASK)) != 0) {
-                return false;
+        /*
+         * Compose options that load a copy of the editor text in place of `edited`. `copy` is
+         * left null (and no options returned) when Compose does not load that file at all.
+         */
+        private string[] compose_args_with_copy (string edited, out string? copy) throws Error {
+            copy = null;
+            var edited_file = File.new_for_path (edited);
+            if (Path.get_basename (edited) == ".env") {
+                copy = write_editor_copy (edited);
+                return { "--env-file", copy };
             }
-            if (keyval == Gdk.Key.Tab) {
-                editor_buffer.insert_at_cursor ("  ", -1);
-                return true;
-            }
-            if (keyval == Gdk.Key.Return || keyval == Gdk.Key.KP_Enter) {
-                Gtk.TextIter cursor, line_start;
-                editor_buffer.get_iter_at_mark (out cursor, editor_buffer.get_insert ());
-                line_start = cursor;
-                line_start.set_line_offset (0);
-                var line = editor_buffer.get_text (line_start, cursor, false);
 
-                var indent = new StringBuilder ();
-                for (int i = 0; i < line.length && line[i] == ' '; i++) {
-                    indent.append_c (' ');
-                }
-                if (line.strip ().has_suffix (":")) {
-                    indent.append ("  ");
-                }
-                editor_buffer.insert_at_cursor ("\n" + indent.str, -1);
-                editor_view.scroll_mark_onscreen (editor_buffer.get_insert ());
-                return true;
+            var files = project.compose_files ();
+            bool loaded = false;
+            foreach (unowned string file in files) {
+                loaded |= File.new_for_path (file).equal (edited_file);
             }
-            return false;
+            if (!loaded) {
+                return {};
+            }
+
+            copy = write_editor_copy (edited);
+            string[] args = {};
+            foreach (unowned string file in files) {
+                args += "-f";
+                args += File.new_for_path (file).equal (edited_file) ? copy : file;
+            }
+            return args;
+        }
+
+        /*
+         * Writes the editor text to a hidden file next to `original`, so paths that Compose
+         * resolves relative to the file (include, extends) still work. It is private: .env
+         * files often hold secrets.
+         */
+        private string write_editor_copy (string original) throws Error {
+            var file = File.new_for_path (Path.build_filename (
+                Path.get_dirname (original),
+                ".%s.dockstation-%s".printf (Path.get_basename (original), Uuid.string_random ().substring (0, 8))
+            ));
+            Gtk.TextIter start, end;
+            editor_buffer.get_bounds (out start, out end);
+            var stream = file.create (FileCreateFlags.PRIVATE);
+            try {
+                stream.write_all (editor_buffer.get_text (start, end, true).data, null);
+                stream.close ();
+            } catch (Error e) {
+                FileUtils.unlink (file.get_path ());
+                throw e;
+            }
+            return file.get_path ();
         }
     }
 }
