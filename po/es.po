@@ -1108,3 +1108,23 @@ msgstr "_Quitar de la lista"
 #: src/window.vala:553
 msgid "Docker is not installed"
 msgstr "Docker no está instalado"
+
+#: src/project-view.vala
+msgid "File Changed on Disk"
+msgstr "El archivo ha cambiado en el disco"
+
+#: src/project-view.vala
+msgid ""
+"“%s” was modified by another program after it was opened. Overwrite it with "
+"your version, or reload it and discard your changes?"
+msgstr ""
+"Otro programa ha modificado «%s» después de abrirlo. ¿Quiere sobrescribirlo "
+"con su versión, o recargarlo y descartar sus cambios?"
+
+#: src/project-view.vala
+msgid "_Reload"
+msgstr "_Recargar"
+
+#: src/project-view.vala
+msgid "_Overwrite"
+msgstr "_Sobrescribir"

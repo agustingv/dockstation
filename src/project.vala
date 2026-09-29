@@ -118,6 +118,75 @@ namespace DockStation {
             return files;
         }
 
+        /*
+         * Absolute paths of the files `docker compose` loads when no -f option is given:
+         * the ones in COMPOSE_FILE (from .env), or else the compose file and the first
+         * override file found.
+         */
+        public string[] compose_files () {
+            var listed = compose_files_from_env ();
+            if (listed != null) {
+                return listed;
+            }
+            string[] files = {};
+            var compose = find_compose_file ();
+            if (compose == null) {
+                return files;
+            }
+            files += compose;
+            foreach (unowned string name in OVERRIDE_FILE_NAMES) {
+                var candidate = Path.build_filename (path, name);
+                if (FileUtils.test (candidate, FileTest.IS_REGULAR)) {
+                    files += candidate;
+                    break;
+                }
+            }
+            return files;
+        }
+
+        private string[]? compose_files_from_env () {
+            string contents;
+            try {
+                FileUtils.get_contents (Path.build_filename (path, ".env"), out contents);
+            } catch (Error e) {
+                return null;
+            }
+
+            string? value = null;
+            string separator = ":";
+            foreach (unowned string raw in contents.split ("\n")) {
+                var line = raw.strip ();
+                if (line.has_prefix ("export ")) {
+                    line = line.substring (7).strip ();
+                }
+                var equals = line.index_of ("=");
+                if (line.has_prefix ("#") || equals <= 0) {
+                    continue;
+                }
+                var key = line.substring (0, equals).strip ();
+                var val = line.substring (equals + 1).strip ();
+                if (val.length >= 2 && (val[0] == '"' || val[0] == '\'') && val[val.length - 1] == val[0]) {
+                    val = val.substring (1, val.length - 2);
+                }
+                if (key == "COMPOSE_FILE") {
+                    value = val;
+                } else if (key == "COMPOSE_PATH_SEPARATOR" && val != "") {
+                    separator = val;
+                }
+            }
+            if (value == null || value == "") {
+                return null;
+            }
+
+            string[] files = {};
+            foreach (unowned string file in value.split (separator)) {
+                if (file != "") {
+                    files += Path.is_absolute (file) ? file : Path.build_filename (path, file);
+                }
+            }
+            return files;
+        }
+
         /* ------------------------------------------------------------ Dockerfiles */
 
         private const int DOCKERFILE_SEARCH_DEPTH = 4;

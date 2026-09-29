@@ -24,6 +24,7 @@ dockstation_deps = [
   dependency('gio-2.0', version: '>= 2.76'),
   dependency('gtk4', version: '>= 4.14'),
   dependency('libadwaita-1', version: '>= 1.6'),
+  dependency('gtksourceview-5', version: '>= 5.10'),
   meson.get_compiler('vala').find_library('posix'),
 ]
 

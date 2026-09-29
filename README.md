@@ -12,10 +12,10 @@ A GNOME application written in Vala with GTK4 and libadwaita to manage and creat
 - **Project actions**: start (`up -d`), stop, restart, pull images, build images, remove containers (`down`), and remove containers and volumes (`down -v`, confirmation required).
 - **Reset a database**: database services that run init scripts from `/docker-entrypoint-initdb.d` get a **Reset Database** button. This covers the official PostgreSQL, MySQL/MariaDB and MongoDB images, with the scripts mounted as a folder or as single files. After confirmation, DockStation stops and removes the container, empties its data (the volume or the host folder), and starts it again. The image's own entrypoint then re-runs every init script (`.sql`, `.sql.gz`, `.sh`, …) with the same settings as the first time, and the Logs tab shows the progress. All existing data is deleted, and the dialog lists the scripts that will run. Folders that clearly hold more than the database (your home folder, the project folder, or any folder containing them) are never emptied.
 - **Configuration editor**: edit the project's files, grouped in two sections:
-  - **Compose**: `compose.yaml`, override files and `.env`. The configuration is checked with `docker compose config` after each save.
+  - **Compose**: `compose.yaml`, override files and `.env`. The configuration is checked with `docker compose config` after each save. **Validate** checks the text in the editor, unsaved changes included: Compose reads a temporary copy placed next to the file (removed right after), so `include` and `extends` paths still resolve.
   - **Dockerfiles**: every `Dockerfile`, `Dockerfile.*`, `*.Dockerfile` and `Containerfile` in the project, found by searching up to four folders deep. Dependency and cache folders (`node_modules`, `vendor`, `.git`, …) and symlinks are skipped. Refresh (Ctrl+R) searches again.
   
-  Ctrl+S saves. The Tab key inserts spaces and new lines keep the indentation.
+  The editor highlights YAML, Dockerfile and `.env` syntax, shows line numbers and makes tab characters visible. Ctrl+S saves. The Tab key inserts spaces (Shift+Tab removes them), new lines keep the indentation, and in YAML they add a level after `key:`. If another program changed the file since it was opened, saving asks whether to overwrite it or reload it.
 - **Logs**: follows logs live, for all services or a single one, with optional timestamps.
 - **Output**: full output of every command DockStation runs. It opens automatically when a command fails.
 - **Remove from list**: forgets a project and leaves its files, containers and volumes alone.
@@ -75,13 +75,13 @@ Search (or just start typing) filters by name, image or project. Measuring sizes
 ## Requirements
 
 - `valac` ≥ 0.56, `meson` ≥ 1.0, `ninja`
-- GTK ≥ 4.14, libadwaita ≥ 1.6, GLib ≥ 2.76
+- GTK ≥ 4.14, libadwaita ≥ 1.6, GtkSourceView ≥ 5.10, GLib ≥ 2.76
 - Docker with the Compose v2 plugin (`docker compose`), usable by your user (for example, through the `docker` group)
 
 On Debian or Ubuntu:
 
 ```sh
-sudo apt install valac meson ninja-build libgtk-4-dev libadwaita-1-dev
+sudo apt install valac meson ninja-build libgtk-4-dev libadwaita-1-dev libgtksourceview-5-dev
 ```
 
 ## Build and run

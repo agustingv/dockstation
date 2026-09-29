@@ -345,9 +345,17 @@ namespace DockStation {
         }
 
         private async void confirm_unsaved (ProjectView view) {
-            if (!view.has_unsaved_changes) {
-                return;
+            // Ask again if saving fails, so changes are only lost when explicitly discarded.
+            while (view.has_unsaved_changes) {
+                if (!(yield ask_save_changes (view))) {
+                    return;
+                }
+                yield view.save_file ();
             }
+        }
+
+        /* Returns true if the user chose to save. */
+        private async bool ask_save_changes (ProjectView view) {
             var dialog = new Adw.AlertDialog (
                 _("Save Changes?"),
                 _("“%s” in “%s” has unsaved changes.").printf (view.editing_file_name, view.project.name)
@@ -359,9 +367,7 @@ namespace DockStation {
             dialog.default_response = "save";
             dialog.close_response = "save";
 
-            if ((yield dialog.choose (this, null)) == "save") {
-                view.save_file ();
-            }
+            return (yield dialog.choose (this, null)) == "save";
         }
 
         public override bool close_request () {

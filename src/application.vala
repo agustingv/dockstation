@@ -17,6 +17,11 @@ namespace DockStation {
             set_accels_for_action ("win.refresh", { "<primary>r", "F5" });
         }
 
+        public override void startup () {
+            base.startup ();
+            GtkSource.init ();
+        }
+
         public override void activate () {
             base.activate ();
             var win = active_window ?? new Window (this);
