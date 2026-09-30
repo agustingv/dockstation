@@ -1,13 +1,16 @@
 data/dockstation.desktop.in
 data/dockstation.metainfo.xml.in
+src/add-service.vala
 src/application.vala
 src/database-init.vala
 src/new-project-dialog.vala
 src/project.vala
 src/project-view.vala
+src/remove-service.vala
 src/resources.vala
 src/resources-view.vala
 src/service-row.vala
+src/service-templates.vala
 src/templates.vala
 src/traefik.vala
 src/window.vala

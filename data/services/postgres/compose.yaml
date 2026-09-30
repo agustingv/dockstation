@@ -1,0 +1,23 @@
+# PostgreSQL, added by DockStation.
+# Other services connect to {{SERVICE}}:5432 with user and database "app";
+# the password is {{PASSWORD_VAR}} in .env.
+
+services:
+  {{SERVICE}}:
+    image: postgres:{{VERSION}}-alpine
+    {{PORTS}}
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: {{PASSWORD_REF}}
+      POSTGRES_DB: app
+    volumes:
+      - {{VOLUME}}:{{DATA_PATH}}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  {{VOLUME}}:

@@ -9,10 +9,12 @@ A GNOME application written in Vala with GTK4 and libadwaita to manage and creat
 - **Project list**: add existing Compose folders or create new ones. Each project shows its live state: running, partly running, stopped or not created.
 - **Services**: every service shows its state, status and published ports, with buttons to start, stop and restart it, open it in the browser and view its logs.
 - **Traefik**: web containers routed by Traefik show their address (for example `blog.localhost`), read from the container's `traefik.http.routers.*` labels. Their **Open in Browser** button opens that address, using `https` when the router has TLS or uses the `websecure` entrypoint. When a service has several addresses (more hosts, or a Traefik route plus a published port), the button offers a list, and each entry names the router it comes from. Routes defined only in Traefik's own configuration files are not shown.
+- **Add a service**: the **+** button next to *Services* adds a service to an existing project: databases (PostgreSQL, MariaDB, MySQL, MongoDB, Redis), web servers (Nginx, Apache, Tomcat, and an Nginx reverse proxy for another service), Adminer or Mailpit. Choose the service name, the image version, a host port (only reachable at `localhost`) and, depending on the service, a folder to serve or the service to forward to. The service is written to its own `compose.<service>.yaml`, and DockStation adds it to the `include:` list of the compose file; nothing else in that file changes. Generated passwords go to `.env`, and a comment at the top of the new file explains how to use the service. Web servers get an example page when their folder is new or empty; existing files are never overwritten. The result is checked with `docker compose config` before the compose file is changed, and every change is undone if the check fails. Services added this way have a **Remove** button: after confirmation, DockStation removes the container, the service's file, its `include:` line and its `.env` settings, and can also delete its data volume. It refuses if the rest of the project still depends on the service, keeps `.env` variables that other services still use, and never deletes the files in the service's folders. You can also [write your own services](#custom-services). Needs Docker Compose 2.20 or newer.
 - **Project actions**: start (`up -d`), stop, restart, pull images, build images, remove containers (`down`), and remove containers and volumes (`down -v`, confirmation required).
+- **Recreate containers**: creates every container again from its image (`up -d --force-recreate --remove-orphans`, confirmation required). It fixes what Start and Restart cannot, because Docker only sets some things when a container is created: its DNS configuration, network attachments and hostname. Data in volumes and project folders is kept; changes made inside the containers are lost. Containers of services that no longer exist are removed.
 - **Reset a database**: database services that run init scripts from `/docker-entrypoint-initdb.d` get a **Reset Database** button. This covers the official PostgreSQL, MySQL/MariaDB and MongoDB images, with the scripts mounted as a folder or as single files. After confirmation, DockStation stops and removes the container, empties its data (the volume or the host folder), and starts it again. The image's own entrypoint then re-runs every init script (`.sql`, `.sql.gz`, `.sh`, …) with the same settings as the first time, and the Logs tab shows the progress. All existing data is deleted, and the dialog lists the scripts that will run. Folders that clearly hold more than the database (your home folder, the project folder, or any folder containing them) are never emptied.
 - **Configuration editor**: edit the project's files, grouped in two sections:
-  - **Compose**: `compose.yaml`, override files and `.env`. The configuration is checked with `docker compose config` after each save. **Validate** checks the text in the editor, unsaved changes included: Compose reads a temporary copy placed next to the file (removed right after), so `include` and `extends` paths still resolve.
+  - **Compose**: `compose.yaml`, override files, the files of added services and `.env`. The configuration is checked with `docker compose config` after each save. **Validate** checks the text in the editor, unsaved changes included: Compose reads a temporary copy placed next to the file (removed right after), so `include` and `extends` paths still resolve.
   - **Dockerfiles**: every `Dockerfile`, `Dockerfile.*`, `*.Dockerfile` and `Containerfile` in the project, found by searching up to four folders deep. Dependency and cache folders (`node_modules`, `vendor`, `.git`, …) and symlinks are skipped. Refresh (Ctrl+R) searches again.
   
   The editor highlights YAML, Dockerfile and `.env` syntax, shows line numbers and makes tab characters visible. Ctrl+S saves. The Tab key inserts spaces (Shift+Tab removes them), new lines keep the indentation, and in YAML they add a level after `key:`. If another program changed the file since it was opened, saving asks whether to overwrite it or reload it.
@@ -231,6 +233,77 @@ meson compile -C build dockstation-update-po  # merges new strings into po/*.po
 
 To add a language, create `po/<code>.po` from `po/dockstation.pot` (for example with `msginit -l fr -i po/dockstation.pot -o po/fr.po`), add the code to `po/LINGUAS`, and run `meson setup --reconfigure build`. Check a translation with `msgfmt --check --statistics po/<code>.po`.
 
+## Custom services
+
+The services offered by **Add Service** are folders. The built-in ones are in [`data/services`](data/services). To add your own, or to replace a built-in one, create a folder in:
+
+- `~/.local/share/dockstation/services/`, or
+- `~/.var/app/es.agustin_garcia.DockStation/data/dockstation/services/` for the Flatpak.
+
+A folder with the same name as a built-in service replaces it. The dialog lists services that could not be loaded, and why. A service folder contains:
+
+| File | Content |
+| --- | --- |
+| `service.ini` | Name, description, versions and options (below) |
+| `compose.yaml` | The service's compose file |
+| `env` | Optional: lines appended to the project's `.env` |
+| `files/` | Optional: starter files copied into the project. Their paths may use placeholders, as in `files/{{FOLDER}}/index.html` |
+
+```ini
+[Service]
+# Required: the version of this format.
+Format=1
+Name=Nginx
+Description=Web server for the files in a folder
+Description[es]=Servidor web para los archivos de una carpeta
+# Lowercase letters, digits, "-" and "_".
+DefaultName=nginx
+# Optional: the port {{PORTS}} can publish, the suggested host port
+# (default: ContainerPort), and whether to publish it by default.
+ContainerPort=80
+HostPort=8080
+Publish=true
+
+# One section per version, newest first; {{VERSION}} is the text after "Version ".
+# Without versions, {{VERSION}} is "latest". UPPERCASE keys are placeholders
+# for that version only.
+[Version stable]
+Description=Recommended for production
+JDK=jdk21
+
+# One section per setting the dialog asks for; its value fills {{FOLDER}}.
+# Type is folder, service or text. Default may use {{SERVICE}}.
+[Option FOLDER]
+Type=folder
+Title=Folder
+Subtitle=The files to serve
+Default={{SERVICE}}
+```
+
+Comments go on their own lines: `KeyFile` does not support comments after a value.
+
+`Description`, `Title` and `Subtitle` can be translated with `Key[lang]` entries, as in desktop files. The option types are:
+
+- `folder`: a folder inside the project. It is created if missing, so Docker does not create it owned by root.
+- `service`: one of the project's services.
+- `text`: free text, limited to letters, digits and `. _ / : @ -`, so it never needs quoting in YAML.
+
+Placeholders in `{{UPPERCASE}}` work in every file. Besides the options and the version's own keys, these are always available:
+
+| Placeholder | Value |
+| --- | --- |
+| `{{SERVICE}}` | The service name |
+| `{{VERSION}}` | The chosen version |
+| `{{VOLUME}}` | `<service>-data`, for the service's named volume. DockStation refuses to add the service if the project already has a volume with that name |
+| `{{PASSWORD}}` | A generated password: put it in `env` |
+| `{{PASSWORD_VAR}}`, `{{PASSWORD_REF}}` | `<SERVICE>_PASSWORD` and `${<SERVICE>_PASSWORD}` |
+| `{{PREFIX}}` | The service name as a variable prefix: `my-db` gives `MY_DB` |
+| `{{PORTS}}` | Only in `compose.yaml`, alone on its line: becomes the `ports:` entry (`127.0.0.1:${<SERVICE>_PORT}:<ContainerPort>`), or disappears when no port is published. The port goes to `.env` |
+
+A placeholder without a value is an error, so a typo is reported instead of reaching the project. Starter files are skipped when the file exists, or when it would go into a `folder` option the user pointed at a folder that already has files.
+
+The built-in services are compiled into the app: after adding a file to `data/services`, also list it in `data/dockstation.gresource.xml`.
+
 ## Keyboard shortcuts
 
 | Shortcut | Action |
@@ -256,11 +329,13 @@ To add a language, create `po/<code>.po` from `po/dockstation.pot` (for example 
 | `src/docker.vala` | Async `docker` runner (collects output or streams it line by line) |
 | `src/project.vala`, `src/project-store.vala` | Project model and persistence |
 | `src/templates.vala` | Project templates and the PHP `Dockerfile` generator |
+| `src/service-templates.vala` | Loads the services offered by Add Service |
+| `src/add-service.vala` | Add Service dialog, and adding a service's files to a project |
 | `src/new-project-dialog.vala` | New Project dialog |
 | `src/resources.vala`, `src/resources-view.vala` | Docker Resources page: disk usage of containers, images and volumes by project |
 | `src/service-row.vala`, `src/project-row.vala`, `src/log-view.vala` | Widgets |
 | `src/utils.vala` | Helpers: port parsing, folder names, secrets |
-| `data/` | Desktop entry, AppStream metadata and app icon |
+| `data/` | Desktop entry, AppStream metadata, app icon and the built-in services (`data/services`) |
 | `po/` | Translations (gettext) |
 
 ## License

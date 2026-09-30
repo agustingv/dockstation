@@ -44,6 +44,15 @@ namespace DockStation {
             return launcher.spawnv (argv);
         }
 
+        /* Arguments for a `docker compose` command, with plain output that is easy to show. */
+        public static string[] compose_args (string[] args) {
+            string[] result = { "compose", "--ansi", "never", "--progress", "plain" };
+            foreach (unowned string arg in args) {
+                result += arg;
+            }
+            return result;
+        }
+
         /* Runs a command to completion and collects its output. */
         public static async CommandResult run (string? cwd, owned string[] args, Cancellable? cancellable = null) throws Error {
             var proc = spawn (cwd, args, SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_PIPE);

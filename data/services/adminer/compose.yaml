@@ -1,0 +1,8 @@
+# Adminer, added by DockStation.
+# To log in, use the name of a database service as the server.
+
+services:
+  {{SERVICE}}:
+    image: adminer:latest
+    {{PORTS}}
+    restart: unless-stopped

@@ -1,0 +1,10 @@
+# Apache HTTP Server, added by DockStation.
+# Serves the files in ./{{FOLDER}}. For PHP, create a project from the "PHP App" template instead.
+
+services:
+  {{SERVICE}}:
+    image: httpd:{{VERSION}}-alpine
+    {{PORTS}}
+    volumes:
+      - ./{{FOLDER}}:/usr/local/apache2/htdocs:ro
+    restart: unless-stopped

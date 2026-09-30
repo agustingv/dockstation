@@ -1128,3 +1128,238 @@ msgstr "_Recargar"
 #: src/project-view.vala
 msgid "_Overwrite"
 msgstr "_Sobrescribir"
+
+#: src/project-view.vala
+msgid "Add Service…"
+msgstr "Añadir servicio…"
+
+#: src/project-view.vala
+#, c-format
+msgid "Added “%s”"
+msgstr "Se añadió «%s»"
+
+#: src/add-service.vala
+msgid "The project has no compose file"
+msgstr "El proyecto no tiene ningún archivo compose"
+
+#: src/add-service.vala
+#, c-format
+msgid "The include list in %s cannot be edited automatically"
+msgstr "La lista «include» de %s no se puede editar automáticamente"
+
+#: src/add-service.vala
+#, c-format
+msgid "The variable %s is already defined in .env"
+msgstr "La variable %s ya está definida en .env"
+
+#: src/add-service.vala
+#, c-format
+msgid "The project already has a volume named %s"
+msgstr "El proyecto ya tiene un volumen llamado %s"
+
+#: src/add-service.vala
+#, c-format
+msgid "The file %s already exists"
+msgstr "El archivo %s ya existe"
+
+#: src/add-service.vala
+msgid "Add Service"
+msgstr "Añadir servicio"
+
+#: src/add-service.vala
+msgid "_Add"
+msgstr "_Añadir"
+
+#: src/add-service.vala
+msgid "Service Name"
+msgstr "Nombre del servicio"
+
+#: src/add-service.vala
+msgid "Version"
+msgstr "Versión"
+
+#: src/add-service.vala
+msgid "Publish Port"
+msgstr "Publicar puerto"
+
+#: src/add-service.vala
+msgid "Make the service reachable from this computer"
+msgstr "Permitir el acceso al servicio desde este equipo"
+
+#: src/add-service.vala
+msgid "Only reachable at localhost"
+msgstr "Solo accesible en localhost"
+
+#: src/add-service.vala
+msgid "Options"
+msgstr "Opciones"
+
+#: src/add-service.vala
+msgid "Start After Adding"
+msgstr "Iniciar después de añadir"
+
+#: src/add-service.vala
+msgid "Pull the image and start the service"
+msgstr "Descargar la imagen e iniciar el servicio"
+
+
+#: src/add-service.vala
+msgid "The project already has a service with this name"
+msgstr "El proyecto ya tiene un servicio con este nombre"
+
+#: src/add-service.vala
+msgid "Could Not Add the Service"
+msgstr "No se pudo añadir el servicio"
+
+#: src/add-service.vala
+msgid "_Close"
+msgstr "_Cerrar"
+
+#: src/service-templates.vala
+#, c-format
+msgid "Unsupported format %d"
+msgstr "Formato no admitido: %d"
+
+#: src/service-templates.vala
+#, c-format
+msgid "Invalid DefaultName “%s”"
+msgstr "DefaultName no válido: «%s»"
+
+#: src/service-templates.vala
+#, c-format
+msgid "Invalid option name “%s”"
+msgstr "Nombre de opción no válido: «%s»"
+
+#: src/service-templates.vala
+#, c-format
+msgid "Unknown option type “%s”"
+msgstr "Tipo de opción desconocido: «%s»"
+
+#: src/service-templates.vala
+#, c-format
+msgid "Unknown section [%s]"
+msgstr "Sección desconocida: [%s]"
+
+#: src/service-templates.vala
+#, c-format
+msgid "%s is not UTF-8 text"
+msgstr "%s no es texto UTF-8"
+
+#: src/service-templates.vala
+#, c-format
+msgid "Unknown placeholder {{%s}}"
+msgstr "Marcador desconocido: {{%s}}"
+
+#: src/add-service.vala
+#, c-format
+msgid "The project has no services for “%s”"
+msgstr "El proyecto no tiene servicios para «%s»"
+
+#: src/add-service.vala
+#, c-format
+msgid "“%s” must be a folder inside the project, such as “public”"
+msgstr "«%s» debe ser una carpeta dentro del proyecto, como «public»"
+
+#: src/add-service.vala
+#, c-format
+msgid "“%s” cannot be empty or contain spaces or quotes"
+msgstr "«%s» no puede estar vacío ni contener espacios o comillas"
+
+#: src/add-service.vala
+#, c-format
+msgid "Invalid file path “%s”"
+msgstr "Ruta de archivo no válida: «%s»"
+
+#: src/add-service.vala
+msgid "Some custom services could not be loaded:"
+msgstr "No se pudieron cargar algunos servicios personalizados:"
+
+#: src/add-service.vala
+msgid "Choose Folder"
+msgstr "Elegir carpeta"
+
+#: src/add-service.vala
+msgid "Choose a Folder in the Project"
+msgstr "Elija una carpeta del proyecto"
+
+#: src/add-service.vala
+#, c-format
+msgid "The folder must be inside %s."
+msgstr "La carpeta debe estar dentro de %s."
+
+#: src/add-service.vala
+msgid "Use lowercase letters, digits, “-” and “_” for the name, starting with a letter"
+msgstr "Use minúsculas, números, «-» y «_» en el nombre, empezando por una letra"
+
+#: src/service-row.vala
+msgid "Remove Service…"
+msgstr "Quitar servicio…"
+
+#: src/remove-service.vala
+#, c-format
+msgid "%s does not include %s"
+msgstr "%s no incluye %s"
+
+#: src/project-view.vala
+msgid "Could Not Remove the Service"
+msgstr "No se pudo quitar el servicio"
+
+#: src/project-view.vala
+msgid "Delete Its Data"
+msgstr "Eliminar sus datos"
+
+#: src/project-view.vala
+#, c-format
+msgid "Remove Service “%s”?"
+msgstr "¿Quitar el servicio «%s»?"
+
+#: src/project-view.vala
+#, c-format
+msgid "Its container is removed, and %s and its settings in .env are deleted. Files in its folders are kept."
+msgstr "Se eliminará su contenedor, y se borrarán %s y sus ajustes de .env. Los archivos de sus carpetas se conservan."
+
+#: src/project-view.vala
+#, c-format
+msgid "Could not remove the “%s” container"
+msgstr "No se pudo eliminar el contenedor de «%s»"
+
+#: src/project-view.vala
+#, c-format
+msgid "Could not delete the volume %s"
+msgstr "No se pudo eliminar el volumen %s"
+
+#: src/project-view.vala
+#, c-format
+msgid "Could not remove “%s”: %s"
+msgstr "No se pudo quitar «%s»: %s"
+
+#: src/project-view.vala
+#, c-format
+msgid "Permanently deletes the volume %s"
+msgid_plural "Permanently deletes the volumes %s"
+msgstr[0] "Elimina de forma permanente el volumen %s"
+msgstr[1] "Elimina de forma permanente los volúmenes %s"
+
+#: src/project-view.vala
+msgid "Re_create Containers…"
+msgstr "Re_crear contenedores…"
+
+#: src/project-view.vala
+msgid "Recreate Containers?"
+msgstr "¿Recrear los contenedores?"
+
+#: src/project-view.vala
+msgid "The containers are created again from their images and started. Data in volumes and project folders is kept; changes made inside the containers are lost."
+msgstr "Los contenedores se crearán de nuevo a partir de sus imágenes y se iniciarán. Los datos de los volúmenes y de las carpetas del proyecto se conservan; los cambios hechos dentro de los contenedores se pierden."
+
+#: src/project-view.vala
+msgid "_Recreate"
+msgstr "_Recrear"
+
+#: src/project-view.vala
+msgid "Containers recreated"
+msgstr "Contenedores recreados"
+
+#: src/project-view.vala
+msgid "Could not recreate the containers"
+msgstr "No se pudieron recrear los contenedores"

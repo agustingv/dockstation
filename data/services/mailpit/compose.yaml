@@ -1,0 +1,9 @@
+# Mailpit, added by DockStation.
+# Other services send email to {{SERVICE}}:1025 (SMTP, no authentication);
+# the web interface shows the messages.
+
+services:
+  {{SERVICE}}:
+    image: axllent/mailpit:latest
+    {{PORTS}}
+    restart: unless-stopped

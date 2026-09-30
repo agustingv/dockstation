@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <!-- Built-in services for "Add Service"; list every file of data/services here. -->
+  <gresource prefix="/es/agustin_garcia/DockStation">
+    <file>services/adminer/compose.yaml</file>
+    <file>services/adminer/service.ini</file>
+    <file>services/apache/compose.yaml</file>
+    <file>services/apache/files/{{FOLDER}}/index.html</file>
+    <file>services/apache/service.ini</file>
+    <file>services/mailpit/compose.yaml</file>
+    <file>services/mailpit/service.ini</file>
+    <file>services/mariadb/compose.yaml</file>
+    <file>services/mariadb/env</file>
+    <file>services/mariadb/service.ini</file>
+    <file>services/mongo/compose.yaml</file>
+    <file>services/mongo/env</file>
+    <file>services/mongo/service.ini</file>
+    <file>services/mysql/compose.yaml</file>
+    <file>services/mysql/env</file>
+    <file>services/mysql/service.ini</file>
+    <file>services/nginx-proxy/compose.yaml</file>
+    <file>services/nginx-proxy/files/{{SERVICE}}/default.conf</file>
+    <file>services/nginx-proxy/service.ini</file>
+    <file>services/nginx/compose.yaml</file>
+    <file>services/nginx/files/{{FOLDER}}/index.html</file>
+    <file>services/nginx/service.ini</file>
+    <file>services/postgres/compose.yaml</file>
+    <file>services/postgres/env</file>
+    <file>services/postgres/service.ini</file>
+    <file>services/redis/compose.yaml</file>
+    <file>services/redis/service.ini</file>
+    <file>services/tomcat/compose.yaml</file>
+    <file>services/tomcat/files/{{FOLDER}}/ROOT/index.html</file>
+    <file>services/tomcat/service.ini</file>
+  </gresource>
+</gresources>

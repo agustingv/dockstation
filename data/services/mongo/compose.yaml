@@ -1,0 +1,22 @@
+# MongoDB, added by DockStation.
+# Other services connect to {{SERVICE}}:27017 with user "app";
+# the password is {{PASSWORD_VAR}} in .env.
+
+services:
+  {{SERVICE}}:
+    image: mongo:{{VERSION}}
+    {{PORTS}}
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: app
+      MONGO_INITDB_ROOT_PASSWORD: {{PASSWORD_REF}}
+    volumes:
+      - {{VOLUME}}:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  {{VOLUME}}:

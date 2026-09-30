@@ -1,0 +1,10 @@
+# Nginx reverse proxy, added by DockStation.
+# Forwards every request to {{TARGET}}:{{TARGET_PORT}}; the configuration is in ./{{SERVICE}}/default.conf.
+
+services:
+  {{SERVICE}}:
+    image: nginx:{{VERSION}}-alpine
+    {{PORTS}}
+    volumes:
+      - ./{{SERVICE}}/default.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped

@@ -18,6 +18,9 @@ dockstation_sources = files(
   'settings.vala',
   'database-init.vala',
   'traefik.vala',
+  'service-templates.vala',
+  'add-service.vala',
+  'remove-service.vala',
 )
 
 dockstation_deps = [
@@ -28,7 +31,7 @@ dockstation_deps = [
   meson.get_compiler('vala').find_library('posix'),
 ]
 
-executable('dockstation', dockstation_sources,
+executable('dockstation', dockstation_sources, dockstation_resources,
   dependencies: dockstation_deps,
   vala_args: ['--target-glib=2.76'],
   install: true,

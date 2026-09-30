@@ -1,0 +1,24 @@
+# MariaDB, added by DockStation.
+# Other services connect to {{SERVICE}}:3306 with user and database "app";
+# the password is {{PASSWORD_VAR}} in .env.
+
+services:
+  {{SERVICE}}:
+    image: mariadb:{{VERSION}}
+    {{PORTS}}
+    environment:
+      MARIADB_DATABASE: app
+      MARIADB_USER: app
+      MARIADB_PASSWORD: {{PASSWORD_REF}}
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - {{VOLUME}}:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  {{VOLUME}}:
