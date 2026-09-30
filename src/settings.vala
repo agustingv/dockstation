@@ -4,6 +4,8 @@ namespace DockStation {
         private const string GROUP = "ui";
 
         public bool show_resources { get; set; default = true; }
+        // Closing the window hides it; the app keeps running until Quit.
+        public bool run_in_background { get; set; default = false; }
 
         private string settings_file;
 
@@ -20,6 +22,9 @@ namespace DockStation {
                 if (keyfile.has_key (GROUP, "show-resources")) {
                     show_resources = keyfile.get_boolean (GROUP, "show-resources");
                 }
+                if (keyfile.has_key (GROUP, "run-in-background")) {
+                    run_in_background = keyfile.get_boolean (GROUP, "run-in-background");
+                }
             } catch (Error e) {
                 // No settings saved yet: keep the defaults.
             }
@@ -28,6 +33,7 @@ namespace DockStation {
         private void save () {
             var keyfile = new KeyFile ();
             keyfile.set_boolean (GROUP, "show-resources", show_resources);
+            keyfile.set_boolean (GROUP, "run-in-background", run_in_background);
             try {
                 DirUtils.create_with_parents (Path.get_dirname (settings_file), 0755);
                 keyfile.save_to_file (settings_file);

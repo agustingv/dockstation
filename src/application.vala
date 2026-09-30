@@ -7,7 +7,7 @@ namespace DockStation {
         construct {
             ActionEntry[] entries = {
                 { "about", on_about },
-                { "quit", quit },
+                { "quit", on_quit },
             };
             add_action_entries (entries, this);
 
@@ -26,6 +26,25 @@ namespace DockStation {
             base.activate ();
             var win = active_window ?? new Window (this);
             win.present ();
+        }
+
+        /*
+         * Closes the windows the normal way, so unsaved changes are still asked about,
+         * then the app ends with the last window, also when it runs in the background.
+         */
+        private void on_quit () {
+            var windows = get_windows ().copy ();
+            if (windows.length () == 0) {
+                quit ();
+                return;
+            }
+            foreach (var window in windows) {
+                if (window is Window) {
+                    ((Window) window).quit_app ();
+                } else {
+                    window.close ();
+                }
+            }
         }
 
         private void on_about () {

@@ -21,6 +21,9 @@ namespace DockStation {
         private bool close_confirmed = false;
         private bool opening_initial_project = false;
         private uint refresh_source_id = 0;
+        private Background background = new Background ();
+        // Set by Quit: closing the window then ends the app even when it runs in the background.
+        private bool quitting = false;
 
         public Window (Application app) {
             Object (application: app);
@@ -54,6 +57,13 @@ namespace DockStation {
             });
             add_action (show_resources_action);
 
+            var background_action = new SimpleAction.stateful (
+                "run-in-background", null, new Variant.boolean (settings.run_in_background));
+            background_action.change_state.connect ((action, state) => {
+                set_run_in_background.begin (action, state.get_boolean ());
+            });
+            add_action (background_action);
+
             build_ui ();
 
             // Open the first project, like other GNOME sidebar apps, without
@@ -86,7 +96,11 @@ namespace DockStation {
             var main_menu = new Menu ();
             main_menu.append (_("_Refresh"), "win.refresh");
             main_menu.append (_("Show _Docker Resources"), "win.show-resources");
-            main_menu.append (_("_About DockStation"), "app.about");
+            main_menu.append (_("Run in _Background"), "win.run-in-background");
+            var app_section = new Menu ();
+            app_section.append (_("_About DockStation"), "app.about");
+            app_section.append (_("_Quit"), "app.quit");
+            main_menu.append_section (null, app_section);
             var menu_button = new Gtk.MenuButton () {
                 icon_name = "open-menu-symbolic",
                 menu_model = main_menu,
@@ -370,7 +384,47 @@ namespace DockStation {
             return (yield dialog.choose (this, null)) == "save";
         }
 
+        /* Closes the window and ends the app, also when it runs in the background. */
+        public void quit_app () {
+            quitting = true;
+            // An unsaved-changes dialog needs the window on screen.
+            present ();
+            close ();
+        }
+
+        private async void set_run_in_background (SimpleAction action, bool enabled) {
+            if (enabled && !(yield background.request (this))) {
+                show_toast (_("DockStation is not allowed to run in the background"));
+                return;
+            }
+            action.set_state (new Variant.boolean (enabled));
+            settings.run_in_background = enabled;
+            update_background_status ();
+        }
+
+        /* "2 projects running", shown by GNOME while the window is closed. */
+        private void update_background_status () {
+            if (!settings.run_in_background) {
+                return;
+            }
+            int running = 0;
+            for (uint i = 0; i < store.projects.get_n_items (); i++) {
+                var state = ((Project) store.projects.get_item (i)).state;
+                if (state == ProjectState.RUNNING || state == ProjectState.PARTIAL) {
+                    running++;
+                }
+            }
+            background.set_status.begin (running == 0
+                ? _("No projects running")
+                : ngettext ("%d project running", "%d projects running", running).printf (running));
+        }
+
         public override bool close_request () {
+            // Keep running: hide the window, with any unsaved changes, and keep refreshing.
+            if (settings.run_in_background && !quitting) {
+                visible = false;
+                return true;
+            }
             if (!close_confirmed && current_view != null && current_view.has_unsaved_changes) {
                 confirm_unsaved.begin (current_view, (obj, res) => {
                     confirm_unsaved.end (res);
@@ -547,9 +601,11 @@ namespace DockStation {
                 show_docker_error (e.message);
             }
 
-            if (current_view != null) {
+            // A hidden window only needs the project states, for the background status.
+            if (current_view != null && visible) {
                 yield current_view.refresh_services ();
             }
+            update_background_status ();
             refreshing = false;
         }
 

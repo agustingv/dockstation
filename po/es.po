@@ -1363,3 +1363,30 @@ msgstr "Contenedores recreados"
 #: src/project-view.vala
 msgid "Could not recreate the containers"
 msgstr "No se pudieron recrear los contenedores"
+
+#: src/background.vala
+msgid "DockStation keeps showing the state of your projects when its window is closed."
+msgstr "DockStation sigue mostrando el estado de sus proyectos cuando se cierra su ventana."
+
+#: src/window.vala
+msgid "Run in _Background"
+msgstr "Ejecutar en _segundo plano"
+
+#: src/window.vala
+msgid "_Quit"
+msgstr "_Salir"
+
+#: src/window.vala
+msgid "DockStation is not allowed to run in the background"
+msgstr "DockStation no tiene permiso para ejecutarse en segundo plano"
+
+#: src/window.vala
+msgid "No projects running"
+msgstr "Ningún proyecto en ejecución"
+
+#: src/window.vala
+#, c-format
+msgid "%d project running"
+msgid_plural "%d projects running"
+msgstr[0] "%d proyecto en ejecución"
+msgstr[1] "%d proyectos en ejecución"

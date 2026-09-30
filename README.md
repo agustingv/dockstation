@@ -11,6 +11,7 @@ A GNOME application written in Vala with GTK4 and libadwaita to manage and creat
 - **Traefik**: web containers routed by Traefik show their address (for example `blog.localhost`), read from the container's `traefik.http.routers.*` labels. Their **Open in Browser** button opens that address, using `https` when the router has TLS or uses the `websecure` entrypoint. When a service has several addresses (more hosts, or a Traefik route plus a published port), the button offers a list, and each entry names the router it comes from. Routes defined only in Traefik's own configuration files are not shown.
 - **Add a service**: the **+** button next to *Services* adds a service to an existing project: databases (PostgreSQL, MariaDB, MySQL, MongoDB, Redis), web servers (Nginx, Apache, Tomcat, and an Nginx reverse proxy for another service), Adminer or Mailpit. Choose the service name, the image version, a host port (only reachable at `localhost`) and, depending on the service, a folder to serve or the service to forward to. The service is written to its own `compose.<service>.yaml`, and DockStation adds it to the `include:` list of the compose file; nothing else in that file changes. Generated passwords go to `.env`, and a comment at the top of the new file explains how to use the service. Web servers get an example page when their folder is new or empty; existing files are never overwritten. The result is checked with `docker compose config` before the compose file is changed, and every change is undone if the check fails. Services added this way have a **Remove** button: after confirmation, DockStation removes the container, the service's file, its `include:` line and its `.env` settings, and can also delete its data volume. It refuses if the rest of the project still depends on the service, keeps `.env` variables that other services still use, and never deletes the files in the service's folders. You can also [write your own services](#custom-services). Needs Docker Compose 2.20 or newer.
 - **Project actions**: start (`up -d`), stop, restart, pull images, build images, remove containers (`down`), and remove containers and volumes (`down -v`, confirmation required).
+- **Run in background**: with **Run in Background** on (main menu), closing the window hides it and DockStation keeps checking your projects; open it again from the app launcher, and use **Quit** (Ctrl+Q) to end it. Turning it on asks the desktop for permission. In the Flatpak, GNOME lists DockStation under *Background Apps* in the quick settings, with how many projects are running. Unsaved changes in the editor are kept while the window is hidden, and Quit still asks about them.
 - **Recreate containers**: creates every container again from its image (`up -d --force-recreate --remove-orphans`, confirmation required). It fixes what Start and Restart cannot, because Docker only sets some things when a container is created: its DNS configuration, network attachments and hostname. Data in volumes and project folders is kept; changes made inside the containers are lost. Containers of services that no longer exist are removed.
 - **Reset a database**: database services that run init scripts from `/docker-entrypoint-initdb.d` get a **Reset Database** button. This covers the official PostgreSQL, MySQL/MariaDB and MongoDB images, with the scripts mounted as a folder or as single files. After confirmation, DockStation stops and removes the container, empties its data (the volume or the host folder), and starts it again. The image's own entrypoint then re-runs every init script (`.sql`, `.sql.gz`, `.sh`, …) with the same settings as the first time, and the Logs tab shows the progress. All existing data is deleted, and the dialog lists the scripts that will run. Folders that clearly hold more than the database (your home folder, the project folder, or any folder containing them) are never emptied.
 - **Configuration editor**: edit the project's files, grouped in two sections:
@@ -77,13 +78,13 @@ Search (or just start typing) filters by name, image or project. Measuring sizes
 ## Requirements
 
 - `valac` ≥ 0.56, `meson` ≥ 1.0, `ninja`
-- GTK ≥ 4.14, libadwaita ≥ 1.6, GtkSourceView ≥ 5.10, GLib ≥ 2.76
+- GTK ≥ 4.14, libadwaita ≥ 1.6, GtkSourceView ≥ 5.10, libportal ≥ 0.7, GLib ≥ 2.76
 - Docker with the Compose v2 plugin (`docker compose`), usable by your user (for example, through the `docker` group)
 
 On Debian or Ubuntu:
 
 ```sh
-sudo apt install valac meson ninja-build libgtk-4-dev libadwaita-1-dev libgtksourceview-5-dev
+sudo apt install valac meson ninja-build libgtk-4-dev libadwaita-1-dev libgtksourceview-5-dev libportal-gtk4-dev
 ```
 
 ## Build and run
@@ -324,6 +325,7 @@ The built-in services are compiled into the app: after adding a file to `data/se
 | File | Purpose |
 | --- | --- |
 | `src/application.vala` | `Adw.Application`, app actions and shortcuts |
+| `src/background.vala` | Running in the background through the portal, and the status GNOME shows |
 | `src/window.vala` | Main window: sidebar, periodic status refresh, adding, removing and deleting projects |
 | `src/project-view.vala` | Per-project page: services, editor, logs, output, project actions |
 | `src/docker.vala` | Async `docker` runner (collects output or streams it line by line) |
