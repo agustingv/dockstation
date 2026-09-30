@@ -163,6 +163,43 @@ namespace DockStation.Utils {
         return builder.str;
     }
 
+    /* Names of the variables defined in the text of a .env file. */
+    public string[] env_keys (string text) {
+        string[] keys = {};
+        foreach (unowned string raw in text.split ("\n")) {
+            var line = raw.strip ();
+            if (line.has_prefix ("export ")) {
+                line = line.substring (7).strip ();
+            }
+            var equals = line.index_of ("=");
+            if (!line.has_prefix ("#") && equals > 0) {
+                keys += line.substring (0, equals).strip ();
+            }
+        }
+        return keys;
+    }
+
+    /*
+     * Writes `text` to a new hidden file next to `original` and returns its path. Being
+     * in the same folder, paths relative to the original (include, extends) still work.
+     * The file is private: .env files often hold secrets.
+     */
+    public string write_hidden_copy (string original, string text) throws Error {
+        var file = File.new_for_path (Path.build_filename (
+            Path.get_dirname (original),
+            ".%s.dockstation-%s".printf (Path.get_basename (original), Uuid.string_random ().substring (0, 8))
+        ));
+        var stream = file.create (FileCreateFlags.PRIVATE);
+        try {
+            stream.write_all (text.data, null);
+            stream.close ();
+        } catch (Error e) {
+            FileUtils.unlink (file.get_path ());
+            throw e;
+        }
+        return file.get_path ();
+    }
+
     public bool is_directory_empty (File dir) {
         try {
             var enumerator = dir.enumerate_children (FileAttribute.STANDARD_NAME, FileQueryInfoFlags.NONE);

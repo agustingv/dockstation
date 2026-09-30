@@ -114,8 +114,35 @@ namespace DockStation {
                     files += name;
                 }
             }
+            foreach (unowned string name in service_files ()) {
+                files += name;
+            }
             files += ".env";
             return files;
+        }
+
+        /* Files of services added with "Add Service" (compose.<service>.yaml), sorted by name. */
+        private string[] service_files () {
+            var names = new GenericArray<string> ();
+            try {
+                var dir = Dir.open (path);
+                string? name;
+                while ((name = dir.read_name ()) != null) {
+                    if (Regex.match_simple ("^compose\\..+\\.ya?ml$", name)
+                        && !(name in OVERRIDE_FILE_NAMES)
+                        && FileUtils.test (Path.build_filename (path, name), FileTest.IS_REGULAR)) {
+                        names.add (name);
+                    }
+                }
+            } catch (FileError e) {
+                return {};
+            }
+            names.sort (strcmp);
+            string[] sorted = {};
+            foreach (unowned string name in names) {
+                sorted += name;
+            }
+            return sorted;
         }
 
         /*

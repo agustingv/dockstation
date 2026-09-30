@@ -81,7 +81,7 @@ namespace DockStation {
         public signal void deleted ();
         public signal void containers_changed ();
 
-        private const string[] COMPOSE_ACTIONS = { "up", "stop", "restart", "down", "pull", "build", "down-volumes", "delete" };
+        private const string[] COMPOSE_ACTIONS = { "up", "stop", "restart", "down", "pull", "build", "down-volumes", "recreate", "delete" };
         private const string PS_FORMAT = "{{.Service}}\t{{.Name}}\t{{.State}}\t{{.Status}}\t{{.Ports}}\t{{.ID}}";
 
         private Cancellable cancellable = new Cancellable ();
@@ -200,12 +200,14 @@ namespace DockStation {
             add_compose_action ("build", { "build" }, _("Images built"), _("Could not build images"));
 
             add_simple_action ("down-volumes", () => confirm_down_volumes.begin ());
+            add_simple_action ("recreate", () => confirm_recreate.begin ());
             add_simple_action ("open-folder", open_folder);
             add_simple_action ("remove", () => remove_requested ());
             add_simple_action ("delete", () => delete_project.begin ());
             add_simple_action ("save-file", () => save_file.begin ());
             add_simple_action ("revert-file", () => load_file_at (current_file_index));
             add_simple_action ("validate", () => validate.begin (false));
+            add_simple_action ("add-service", () => show_add_service.begin ());
 
             insert_action_group ("project", actions);
 
@@ -236,11 +238,7 @@ namespace DockStation {
         }
 
         private string[] compose_args (string[] args) {
-            string[] result = { "compose", "--ansi", "never", "--progress", "plain" };
-            foreach (unowned string arg in args) {
-                result += arg;
-            }
-            return result;
+            return Docker.compose_args (args);
         }
 
         private void set_busy (bool value) {
@@ -253,7 +251,7 @@ namespace DockStation {
             service_rows.foreach ((name, row) => row.set_actions_sensitive (!value));
         }
 
-        /* Returns true if the command ran and exited successfully. */
+        /* Returns true if the command ran and exited successfully. An empty `success_message` shows no toast. */
         public async bool run_compose (owned string[] args, string success_message, string failure_message) {
             if (busy) {
                 return false;
@@ -274,7 +272,9 @@ namespace DockStation {
                 success = status == 0;
                 if (success) {
                     output_view.append ("✔ " + _("Done") + "\n\n");
-                    toast (success_message);
+                    if (success_message != "") {
+                        toast (success_message);
+                    }
                 } else {
                     output_view.append ("✘ " + _("Exited with status %d").printf (status) + "\n\n");
                     toast (failure_message);
@@ -310,6 +310,29 @@ namespace DockStation {
 
             if ((yield dialog.choose (this, null)) == "remove") {
                 yield run_compose ({ "down", "--volumes" }, _("Containers and volumes removed"), _("Could not take the project down"));
+            }
+        }
+
+        /*
+         * Creates every container again from its image. Fixes what Start and Restart cannot,
+         * because Docker only sets it when a container is created: its DNS configuration,
+         * network attachments and hostname.
+         */
+        private async void confirm_recreate () {
+            var dialog = new Adw.AlertDialog (
+                _("Recreate Containers?"),
+                _("The containers are created again from their images and started. Data in volumes and project folders is kept; changes made inside the containers are lost.")
+            );
+            dialog.add_response ("cancel", _("_Cancel"));
+            dialog.add_response ("recreate", _("_Recreate"));
+            dialog.set_response_appearance ("recreate", Adw.ResponseAppearance.SUGGESTED);
+            dialog.default_response = "cancel";
+            dialog.close_response = "cancel";
+
+            if ((yield dialog.choose (this, null)) == "recreate") {
+                // --remove-orphans also removes containers of services that no longer exist.
+                yield run_compose ({ "up", "--detach", "--force-recreate", "--remove-orphans" },
+                                   _("Containers recreated"), _("Could not recreate the containers"));
             }
         }
 
@@ -381,6 +404,31 @@ namespace DockStation {
             deleted ();
         }
 
+        private async void show_add_service () {
+            if (project.compose_files ().length == 0) {
+                toast (_("No compose file found in %s").printf (Utils.home_relative (project.path)));
+                return;
+            }
+            // Adding a service changes the compose file and .env on disk.
+            if (dirty && !(yield settle_unsaved_changes ())) {
+                return;
+            }
+            var dialog = new AddServiceDialog (project, service_names);
+            dialog.added.connect ((service, start) => on_service_added.begin (service, start));
+            dialog.present (this);
+        }
+
+        private async void on_service_added (string service, bool start) {
+            toast (_("Added “%s”").printf (service));
+            reload_editor_files ();
+            if (start) {
+                yield run_compose ({ "up", "--detach", service },
+                                   _("Service “%s” started").printf (service),
+                                   _("Could not start “%s”").printf (service));
+            }
+            reload ();
+        }
+
         private void open_folder () {
             var launcher = new Gtk.FileLauncher (File.new_for_path (project.path));
             launcher.launch.begin ((Gtk.Window) get_root (), null, (obj, res) => {
@@ -442,6 +490,7 @@ namespace DockStation {
             images_section.append (_("_Build Images"), "project.build");
             menu.append_section (null, images_section);
             var down_section = new Menu ();
+            down_section.append (_("Re_create Containers…"), "project.recreate");
             down_section.append (_("_Remove Containers"), "project.down");
             down_section.append (_("Remove Containers and _Volumes…"), "project.down-volumes");
             menu.append_section (null, down_section);
@@ -515,9 +564,20 @@ namespace DockStation {
             refresh_button.add_css_class ("flat");
             refresh_button.clicked.connect (() => reload ());
 
+            var add_button = new Gtk.Button.from_icon_name ("list-add-symbolic") {
+                action_name = "project.add-service",
+                tooltip_text = _("Add Service…"),
+                valign = Gtk.Align.CENTER,
+            };
+            add_button.add_css_class ("flat");
+
+            var header_buttons = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
+            header_buttons.append (add_button);
+            header_buttons.append (refresh_button);
+
             services_group = new Adw.PreferencesGroup () {
                 title = _("Services"),
-                header_suffix = refresh_button,
+                header_suffix = header_buttons,
             };
 
             var page = new Adw.PreferencesPage ();
@@ -800,6 +860,7 @@ namespace DockStation {
                 }
             }
 
+            var removable = ServiceRemover.added_services (project);
             foreach (unowned string name in order) {
                 var row = service_rows[name];
                 if (row == null) {
@@ -814,6 +875,7 @@ namespace DockStation {
                 row.show_traefik_routes (info.container_id != "" ? traefik_routes[info.container_id] : null);
                 row.update (info);
                 row.show_database_reset (info.containers == 1 ? databases[info.container_id] : null);
+                row.show_remove (name in removable);
             }
 
             if (order.length == 0 && services_group.description == null) {
@@ -847,7 +909,85 @@ namespace DockStation {
                         reset_database.begin (service, row.database);
                     }
                     break;
+                case "remove-service":
+                    remove_service.begin (service);
+                    break;
             }
+        }
+
+        /* --------------------------------------------------------- service removal */
+
+        private async void remove_service (string service) {
+            if (busy) {
+                return;
+            }
+            // Removing a service changes the compose file and .env on disk.
+            if (dirty && !(yield settle_unsaved_changes ())) {
+                return;
+            }
+
+            ServiceRemoval removal;
+            try {
+                removal = yield ServiceRemover.prepare (project, service);
+            } catch (Error e) {
+                var alert = new Adw.AlertDialog (_("Could Not Remove the Service"), e.message);
+                alert.add_response ("close", _("_Close"));
+                alert.present (this);
+                return;
+            }
+
+            var data_row = new Adw.SwitchRow () {
+                title = _("Delete Its Data"),
+                subtitle = ngettext ("Permanently deletes the volume %s", "Permanently deletes the volumes %s",
+                                     removal.volumes.length).printf (string.joinv (", ", removal.volumes)),
+            };
+            var options = new Gtk.ListBox () { selection_mode = Gtk.SelectionMode.NONE };
+            options.add_css_class ("boxed-list");
+            options.append (data_row);
+
+            var dialog = new Adw.AlertDialog (
+                _("Remove Service “%s”?").printf (service),
+                _("Its container is removed, and %s and its settings in .env are deleted. Files in its folders are kept.")
+                    .printf (removal.service_file.get_basename ())
+            );
+            if (removal.volumes.length > 0) {
+                dialog.extra_child = options;
+            }
+            dialog.add_response ("cancel", _("_Cancel"));
+            dialog.add_response ("remove", _("_Remove"));
+            dialog.set_response_appearance ("remove", Adw.ResponseAppearance.DESTRUCTIVE);
+            dialog.default_response = "cancel";
+            dialog.close_response = "cancel";
+            if ((yield dialog.choose (this, null)) != "remove") {
+                return;
+            }
+
+            // The container first: once the service is gone from the files, Compose no longer knows it.
+            if (!(yield run_compose ({ "rm", "--stop", "--force", "--volumes", service }, "",
+                                     _("Could not remove the “%s” container").printf (service)))) {
+                return;
+            }
+            if (data_row.active) {
+                foreach (unowned string volume in removal.volumes) {
+                    try {
+                        if (!(yield run_step ({ "volume", "rm", volume }))) {
+                            toast (_("Could not delete the volume %s").printf (volume));
+                        }
+                    } catch (Error e) {
+                        toast (e.message);
+                    }
+                }
+            }
+
+            try {
+                ServiceRemover.apply (removal);
+            } catch (Error e) {
+                toast (_("Could not remove “%s”: %s").printf (service, e.message));
+                return;
+            }
+            toast (_("Removed “%s”").printf (service));
+            reload_editor_files ();
+            reload ();
         }
 
         /* --------------------------------------------------------- database reset */
@@ -1187,6 +1327,20 @@ namespace DockStation {
         }
 
         private async void ask_save_before_switch (uint target) {
+            if (!(yield settle_unsaved_changes ())) {
+                switching_file = true;
+                file_dropdown.selected = current_file_index;
+                switching_file = false;
+                return;
+            }
+            load_file_at (target);
+        }
+
+        /*
+         * Asks whether to save or discard the editor's changes. Returns false if the
+         * user cancelled or the file could not be saved; the changes are then kept.
+         */
+        private async bool settle_unsaved_changes () {
             var dialog = new Adw.AlertDialog (
                 _("Save Changes?"),
                 _("“%s” has unsaved changes.").printf (editing_file_name)
@@ -1200,13 +1354,14 @@ namespace DockStation {
             dialog.close_response = "cancel";
 
             var response = yield dialog.choose (this, null);
-            if (response == "cancel" || (response == "save" && !(yield save_file ()))) {
-                switching_file = true;
-                file_dropdown.selected = current_file_index;
-                switching_file = false;
-                return;
+            if (response == "save") {
+                return yield save_file ();
             }
-            load_file_at (target);
+            if (response == "discard") {
+                load_file_at (current_file_index);
+                return true;
+            }
+            return false;
         }
 
         /* Returns true if the editor holds no unsaved changes afterwards. */
@@ -1360,27 +1515,10 @@ namespace DockStation {
             return args;
         }
 
-        /*
-         * Writes the editor text to a hidden file next to `original`, so paths that Compose
-         * resolves relative to the file (include, extends) still work. It is private: .env
-         * files often hold secrets.
-         */
         private string write_editor_copy (string original) throws Error {
-            var file = File.new_for_path (Path.build_filename (
-                Path.get_dirname (original),
-                ".%s.dockstation-%s".printf (Path.get_basename (original), Uuid.string_random ().substring (0, 8))
-            ));
             Gtk.TextIter start, end;
             editor_buffer.get_bounds (out start, out end);
-            var stream = file.create (FileCreateFlags.PRIVATE);
-            try {
-                stream.write_all (editor_buffer.get_text (start, end, true).data, null);
-                stream.close ();
-            } catch (Error e) {
-                FileUtils.unlink (file.get_path ());
-                throw e;
-            }
-            return file.get_path ();
+            return Utils.write_hidden_copy (original, editor_buffer.get_text (start, end, true));
         }
     }
 }

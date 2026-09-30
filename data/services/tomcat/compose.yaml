@@ -1,0 +1,11 @@
+# Tomcat, added by DockStation.
+# Copy .war files into ./{{FOLDER}} to deploy them: app.war is served at /app,
+# and ROOT (or ROOT.war) at /. Tomcat unpacks them there as root.
+
+services:
+  {{SERVICE}}:
+    image: tomcat:{{VERSION}}-{{JDK}}
+    {{PORTS}}
+    volumes:
+      - ./{{FOLDER}}:/usr/local/tomcat/webapps
+    restart: unless-stopped

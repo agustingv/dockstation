@@ -47,6 +47,7 @@ namespace DockStation {
         private Gtk.Button toggle_button;
         private Gtk.Button restart_button;
         private Gtk.Button reset_button;
+        private Gtk.Button remove_button;
         private bool running = false;
 
         /* Set when the service is a database that can be reset from its init scripts. */
@@ -79,6 +80,8 @@ namespace DockStation {
             reset_button = add_button ("document-revert-symbolic", _("Reset Database from Init Scripts"), "reset-database");
             reset_button.visible = false;
             add_button ("utilities-terminal-symbolic", _("Show Logs"), "logs");
+            remove_button = add_button ("user-trash-symbolic", _("Remove Service…"), "remove-service");
+            remove_button.visible = false;
         }
 
         public override void dispose () {
@@ -155,6 +158,11 @@ namespace DockStation {
             }
         }
 
+        /* Only for services added with Add Service, which live in their own file. */
+        public void show_remove (bool removable) {
+            remove_button.visible = removable;
+        }
+
         private Gtk.Button add_button (string icon, string tooltip, string action) {
             var button = new Gtk.Button.from_icon_name (icon) {
                 tooltip_text = tooltip,
@@ -222,6 +230,7 @@ namespace DockStation {
             toggle_button.sensitive = sensitive;
             restart_button.sensitive = sensitive;
             reset_button.sensitive = sensitive;
+            remove_button.sensitive = sensitive;
         }
     }
 }

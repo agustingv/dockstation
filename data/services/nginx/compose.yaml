@@ -1,0 +1,10 @@
+# Nginx, added by DockStation.
+# Serves the files in ./{{FOLDER}}.
+
+services:
+  {{SERVICE}}:
+    image: nginx:{{VERSION}}-alpine
+    {{PORTS}}
+    volumes:
+      - ./{{FOLDER}}:/usr/share/nginx/html:ro
+    restart: unless-stopped

@@ -36,6 +36,11 @@ if appstreamcli.found()
   )
 endif
 
+dockstation_resources = gnome.compile_resources('dockstation-resources',
+  'dockstation.gresource.xml',
+  c_name: 'dockstation',
+)
+
 install_data('icons/hicolor/scalable/apps/' + app_id + '.svg',
   install_dir: get_option('datadir') / 'icons' / 'hicolor' / 'scalable' / 'apps',
 )

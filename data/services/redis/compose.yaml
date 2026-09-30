@@ -1,0 +1,18 @@
+# Redis, added by DockStation.
+# Other services connect to {{SERVICE}}:6379, without a password.
+
+services:
+  {{SERVICE}}:
+    image: redis:{{VERSION}}-alpine
+    {{PORTS}}
+    volumes:
+      - {{VOLUME}}:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  {{VOLUME}}:
