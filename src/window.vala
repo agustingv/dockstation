@@ -568,26 +568,24 @@ namespace DockStation {
             }
             refreshing = true;
 
+            GenericArray<ComposeContainer>? containers = null;
             try {
-                // One call for every project: group all compose containers by project folder.
+                // One call for every project, and for the open project's services too.
                 var result = yield Docker.run (null, {
                     "ps", "--all",
                     "--filter", "label=com.docker.compose.project",
-                    "--format", "{{.Label \"com.docker.compose.project.working_dir\"}}\t{{.State}}"
+                    "--format", Docker.COMPOSE_PS_FORMAT,
                 });
 
                 if (result.success) {
                     docker_banner.revealed = false;
+                    containers = ComposeContainer.parse (result.stdout_text);
                     var running = new HashTable<string, int> (str_hash, str_equal);
                     var total = new HashTable<string, int> (str_hash, str_equal);
-                    foreach (unowned string line in result.stdout_text.split ("\n")) {
-                        var fields = line.split ("\t");
-                        if (fields.length < 2) {
-                            continue;
-                        }
-                        total[fields[0]] = total[fields[0]] + 1;
-                        if (fields[1] == "running") {
-                            running[fields[0]] = running[fields[0]] + 1;
+                    foreach (var container in containers) {
+                        total[container.working_dir] = total[container.working_dir] + 1;
+                        if (container.state == "running") {
+                            running[container.working_dir] = running[container.working_dir] + 1;
                         }
                     }
                     for (uint i = 0; i < store.projects.get_n_items (); i++) {
@@ -603,7 +601,7 @@ namespace DockStation {
 
             // A hidden window only needs the project states, for the background status.
             if (current_view != null && visible) {
-                yield current_view.refresh_services ();
+                yield current_view.refresh_services (false, containers);
             }
             update_background_status ();
             refreshing = false;
