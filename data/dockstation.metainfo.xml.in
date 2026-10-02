@@ -12,7 +12,7 @@
       configuration and create new projects from ready-made templates.
     </p>
   </description>
-  <developer id="es.agustin_garcia">
+  <developer id="io.github.agustingv">
     <name>Agustin Garcia</name>
   </developer>
   <launchable type="desktop-id">@APP_ID@.desktop</launchable>
