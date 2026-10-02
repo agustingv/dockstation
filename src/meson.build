@@ -21,6 +21,8 @@ dockstation_sources = files(
   'service-templates.vala',
   'add-service.vala',
   'remove-service.vala',
+  'background.vala',
+  'tray-icon.vala',
 )
 
 dockstation_deps = [
@@ -28,6 +30,7 @@ dockstation_deps = [
   dependency('gtk4', version: '>= 4.14'),
   dependency('libadwaita-1', version: '>= 1.6'),
   dependency('gtksourceview-5', version: '>= 5.10'),
+  dependency('libportal-gtk4', version: '>= 0.7'),
   meson.get_compiler('vala').find_library('posix'),
 ]
 

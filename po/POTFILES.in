@@ -2,6 +2,7 @@ data/dockstation.desktop.in
 data/dockstation.metainfo.xml.in
 src/add-service.vala
 src/application.vala
+src/background.vala
 src/database-init.vala
 src/new-project-dialog.vala
 src/project.vala

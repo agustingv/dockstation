@@ -82,7 +82,6 @@ namespace DockStation {
         public signal void containers_changed ();
 
         private const string[] COMPOSE_ACTIONS = { "up", "stop", "restart", "down", "pull", "build", "down-volumes", "recreate", "delete" };
-        private const string PS_FORMAT = "{{.Service}}\t{{.Name}}\t{{.State}}\t{{.Status}}\t{{.Ports}}\t{{.ID}}";
 
         private Cancellable cancellable = new Cancellable ();
         private SimpleActionGroup actions;
@@ -766,7 +765,11 @@ namespace DockStation {
             status_row.subtitle = project.status_label;
         }
 
-        public async void refresh_services (bool reload_config = false) {
+        /*
+         * Updates the services list. `containers` is the window's `docker ps` output for all
+         * projects, which saves running it again; without it, this project's are queried.
+         */
+        public async void refresh_services (bool reload_config = false, GenericArray<ComposeContainer>? containers = null) {
             if (refreshing_services) {
                 config_reload_pending = config_reload_pending || reload_config;
                 return;
@@ -794,22 +797,26 @@ namespace DockStation {
                     order += name;
                 }
 
-                var ps = yield Docker.run (project.path, compose_args ({ "ps", "--all", "--format", PS_FORMAT }), cancellable);
-                if (ps.success) {
-                    foreach (unowned string line in ps.stdout_text.split ("\n")) {
-                        var fields = line.split ("\t");
-                        if (fields.length < 5) {
-                            continue;
-                        }
-                        var info = infos[fields[0]];
-                        if (info == null) {
-                            // Orphan container of a service no longer in the file.
-                            info = new ServiceInfo (fields[0]);
-                            infos[fields[0]] = info;
-                            order += fields[0];
-                        }
-                        info.add_container (fields.length > 5 ? fields[5] : "", fields[2], fields[3], fields[4]);
+                if (containers == null) {
+                    var ps = yield Docker.run (null, {
+                        "ps", "--all",
+                        "--filter", "label=com.docker.compose.project.working_dir=" + project.path,
+                        "--format", Docker.COMPOSE_PS_FORMAT,
+                    }, cancellable);
+                    containers = ps.success ? ComposeContainer.parse (ps.stdout_text) : new GenericArray<ComposeContainer> ();
+                }
+                foreach (var container in containers) {
+                    if (container.working_dir != project.path) {
+                        continue;
                     }
+                    var info = infos[container.service];
+                    if (info == null) {
+                        // Orphan container of a service no longer in the file.
+                        info = new ServiceInfo (container.service);
+                        infos[container.service] = info;
+                        order += container.service;
+                    }
+                    info.add_container (container.id, container.state, container.status, container.ports);
                 }
 
                 yield inspect_containers (infos, order);
