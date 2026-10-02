@@ -26,9 +26,18 @@
     <control>touch</control>
   </supports>
   <releases>
-    <release version="0.1.0" date="2026-09-27">
+    <release version="0.1.0" date="2026-10-02">
       <description>
         <p>First release.</p>
+        <ul>
+          <li>Manage Docker Compose projects: start, stop and restart services and follow their logs</li>
+          <li>Docker resource manager for containers, images, volumes and disk usage</li>
+          <li>Configuration editor that validates changes before saving</li>
+          <li>Add ready-made services to a project from templates</li>
+          <li>Links to the URLs Traefik exposes for your services</li>
+          <li>Keeps running in the background, with a tray icon</li>
+          <li>Spanish translation</li>
+        </ul>
       </description>
     </release>
   </releases>

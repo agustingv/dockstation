@@ -1,5 +1,5 @@
 project('dockstation', ['c', 'vala'],
-  version: '0.0.1-alpha',
+  version: '0.1.0',
   meson_version: '>= 1.0.0',
   license: 'GPL-3.0-or-later',
 )
