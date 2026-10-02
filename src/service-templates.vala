@@ -276,7 +276,7 @@ namespace DockStation {
     }
 
     namespace ServiceTemplates {
-        private const string RESOURCE_DIR = "resource:///es/agustin_garcia/DockStation/services";
+        private const string RESOURCE_DIR = "resource:///io/github/agustingv/dockstation/services";
 
         /* Folder for services written by the user; they replace built-in ones with the same folder name. */
         public string user_dir () {

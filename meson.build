@@ -7,7 +7,7 @@ project('dockstation', ['c', 'vala'],
 i18n = import('i18n')
 gnome = import('gnome')
 
-app_id = 'es.agustin_garcia.DockStation'
+app_id = 'io.github.agustingv.dockstation'
 
 conf = configuration_data()
 conf.set_quoted('APP_ID', app_id)

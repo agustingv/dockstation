@@ -1,5 +1,5 @@
 {
-    "id": "es.agustin_garcia.DockStation",
+    "id": "io.github.agustingv.dockstation",
     "runtime": "org.gnome.Platform",
     "runtime-version": "51",
     "sdk": "org.gnome.Sdk",

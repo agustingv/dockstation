@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <!-- Built-in services for "Add Service"; list every file of data/services here. -->
-  <gresource prefix="/es/agustin_garcia/DockStation">
+  <gresource prefix="/io/github/agustingv/dockstation">
     <file>services/adminer/compose.yaml</file>
     <file>services/adminer/service.ini</file>
     <file>services/apache/compose.yaml</file>

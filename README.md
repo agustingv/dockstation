@@ -112,7 +112,7 @@ ninja -C build install
 
 ## Flatpak
 
-The Flatpak manifest is [`es.agustin_garcia.DockStation.json`](es.agustin_garcia.DockStation.json). It builds DockStation with the GNOME 51 runtime, which includes GTK 4.24, libadwaita 1.10 and the Vala compiler.
+The Flatpak manifest is [`io.github.agustingv.dockstation.json`](io.github.agustingv.dockstation.json). It builds DockStation with the GNOME 51 runtime, which includes GTK 4.24, libadwaita 1.10 and the Vala compiler.
 
 ### 1. Install the tools
 
@@ -137,7 +137,7 @@ docker ps
 From the project folder:
 
 ```sh
-flatpak-builder --user --install --force-clean --install-deps-from=flathub .flatpak/build es.agustin_garcia.DockStation.json
+flatpak-builder --user --install --force-clean --install-deps-from=flathub .flatpak/build io.github.agustingv.dockstation.json
 ```
 
 - `--user` installs DockStation for your user only, with no administrator password.
@@ -149,7 +149,7 @@ flatpak-builder --user --install --force-clean --install-deps-from=flathub .flat
 Open **DockStation** from Activities, or run:
 
 ```sh
-flatpak run es.agustin_garcia.DockStation
+flatpak run io.github.agustingv.dockstation
 ```
 
 ### Update after changing the code
@@ -157,7 +157,7 @@ flatpak run es.agustin_garcia.DockStation
 Run the same command again. The installed Flatpak does not change until you rebuild it.
 
 ```sh
-flatpak-builder --user --install --force-clean .flatpak/build es.agustin_garcia.DockStation.json
+flatpak-builder --user --install --force-clean .flatpak/build io.github.agustingv.dockstation.json
 ```
 
 ### Share it as a single file
@@ -165,8 +165,8 @@ flatpak-builder --user --install --force-clean .flatpak/build es.agustin_garcia.
 Create a bundle that other people can install without building:
 
 ```sh
-flatpak-builder --user --force-clean --repo=repo .flatpak/build es.agustin_garcia.DockStation.json
-flatpak build-bundle repo dockstation.flatpak es.agustin_garcia.DockStation \
+flatpak-builder --user --force-clean --repo=repo .flatpak/build io.github.agustingv.dockstation.json
+flatpak build-bundle repo dockstation.flatpak io.github.agustingv.dockstation \
     --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
 ```
 
@@ -179,9 +179,9 @@ flatpak install --user dockstation.flatpak
 ### Uninstall
 
 ```sh
-flatpak uninstall --user es.agustin_garcia.DockStation
+flatpak uninstall --user io.github.agustingv.dockstation
 flatpak uninstall --user --unused                  # also removes runtimes no other app uses
-rm -rf ~/.var/app/es.agustin_garcia.DockStation    # optional: the Flatpak's project list
+rm -rf ~/.var/app/io.github.agustingv.dockstation    # optional: the Flatpak's project list
 ```
 
 ### How the sandbox affects DockStation
@@ -195,24 +195,24 @@ rm -rf ~/.var/app/es.agustin_garcia.DockStation    # optional: the Flatpak's pro
 - **Projects outside your home folder** are not accessible. Grant access to another folder with:
 
   ```sh
-  flatpak override --user --filesystem=/srv/projects es.agustin_garcia.DockStation
+  flatpak override --user --filesystem=/srv/projects io.github.agustingv.dockstation
   ```
 
-- **Separate project list**: the Flatpak stores its list in `~/.var/app/es.agustin_garcia.DockStation/config/dockstation/projects.ini`, not in `~/.config/dockstation/`. To reuse the projects from a native build, copy the file:
+- **Separate project list**: the Flatpak stores its list in `~/.var/app/io.github.agustingv.dockstation/config/dockstation/projects.ini`, not in `~/.config/dockstation/`. To reuse the projects from a native build, copy the file:
 
   ```sh
-  mkdir -p ~/.var/app/es.agustin_garcia.DockStation/config/dockstation
-  cp ~/.config/dockstation/projects.ini ~/.var/app/es.agustin_garcia.DockStation/config/dockstation/
+  mkdir -p ~/.var/app/io.github.agustingv.dockstation/config/dockstation
+  cp ~/.config/dockstation/projects.ini ~/.var/app/io.github.agustingv.dockstation/config/dockstation/
   ```
 
 ### Troubleshooting
 
 - **"Docker is not installed" or "permission denied" banner**: check that `docker ps` works in a normal terminal without `sudo`. If it does not, add your user to the `docker` group (`sudo usermod -aG docker $USER`), then log out and back in.
-- **Run the sandboxed app from a terminal to see its messages**: `flatpak run es.agustin_garcia.DockStation`
+- **Run the sandboxed app from a terminal to see its messages**: `flatpak run io.github.agustingv.dockstation`
 - **Test Docker access from inside the sandbox**:
 
   ```sh
-  flatpak run --command=flatpak-spawn es.agustin_garcia.DockStation --host docker compose version
+  flatpak run --command=flatpak-spawn io.github.agustingv.dockstation --host docker compose version
   ```
 
 ## Translations
@@ -239,7 +239,7 @@ To add a language, create `po/<code>.po` from `po/dockstation.pot` (for example 
 The services offered by **Add Service** are folders. The built-in ones are in [`data/services`](data/services). To add your own, or to replace a built-in one, create a folder in:
 
 - `~/.local/share/dockstation/services/`, or
-- `~/.var/app/es.agustin_garcia.DockStation/data/dockstation/services/` for the Flatpak.
+- `~/.var/app/io.github.agustingv.dockstation/data/dockstation/services/` for the Flatpak.
 
 A folder with the same name as a built-in service replaces it. The dialog lists services that could not be loaded, and why. A service folder contains:
 
@@ -317,7 +317,7 @@ The built-in services are compiled into the app: after adding a file to `data/se
 
 ## Where data is stored
 
-- The project list: `~/.config/dockstation/projects.ini`, or `~/.var/app/es.agustin_garcia.DockStation/config/dockstation/projects.ini` for the Flatpak.
+- The project list: `~/.config/dockstation/projects.ini`, or `~/.var/app/io.github.agustingv.dockstation/config/dockstation/projects.ini` for the Flatpak.
 - Everything else lives in each project's folder (`compose.yaml`, `.env`, …) and in Docker.
 
 ## Code layout
