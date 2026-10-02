@@ -22,6 +22,7 @@ dockstation_sources = files(
   'add-service.vala',
   'remove-service.vala',
   'background.vala',
+  'tray-icon.vala',
 )
 
 dockstation_deps = [

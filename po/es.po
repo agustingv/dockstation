@@ -1390,3 +1390,27 @@ msgid "%d project running"
 msgid_plural "%d projects running"
 msgstr[0] "%d proyecto en ejecución"
 msgstr[1] "%d proyectos en ejecución"
+
+#: src/window.vala
+msgid "Open DockStation"
+msgstr "Abrir DockStation"
+
+#: src/window.vala
+msgid "Open"
+msgstr "Abrir"
+
+#: src/window.vala
+msgid "Quit"
+msgstr "Salir"
+
+#: src/window.vala
+msgid "Starting…"
+msgstr "Iniciando…"
+
+#: src/window.vala
+msgid "Stopping…"
+msgstr "Deteniendo…"
+
+#: src/window.vala
+msgid "Restarting…"
+msgstr "Reiniciando…"
