@@ -91,6 +91,7 @@ namespace DockStation {
         private Adw.ViewStack stack;
         private Adw.ViewStackPage output_stack_page;
         private Adw.Spinner spinner;
+        private Adw.Banner folder_banner;
 
         // Services page
         private Adw.ActionRow status_row;
@@ -255,16 +256,34 @@ namespace DockStation {
             if (busy) {
                 return false;
             }
-            if (project.find_compose_file () == null) {
+            bool folder_exists = project.folder_exists;
+            if (folder_exists && project.find_compose_file () == null) {
                 toast (_("No compose file found in %s").printf (Utils.home_relative (project.path)));
                 return false;
             }
 
             set_busy (true);
-            output_view.append ("$ docker compose %s\n".printf (string.joinv (" ", args)));
             bool success = false;
             try {
-                int status = yield Docker.stream (project.path, compose_args (args), (line) => {
+                string[] docker_args;
+                if (folder_exists) {
+                    docker_args = compose_args (args);
+                    output_view.append ("$ docker compose %s\n".printf (string.joinv (" ", args)));
+                } else {
+                    // Without its folder, Compose cannot run: act on the containers directly.
+                    var folderless = yield project.folderless_args (args, cancellable);
+                    if (folderless == null) {
+                        set_busy (false);
+                        toast (_("The project folder no longer exists"));
+                        return false;
+                    }
+                    docker_args = folderless;
+                    if (docker_args.length > 0) {
+                        output_view.append ("$ docker %s\n".printf (string.joinv (" ", docker_args)));
+                    }
+                }
+
+                int status = docker_args.length == 0 ? 0 : yield Docker.stream (folder_exists ? project.path : null, docker_args, (line) => {
                     output_view.append (line + "\n");
                 }, cancellable);
 
@@ -336,18 +355,23 @@ namespace DockStation {
         }
 
         private async void delete_project () {
-            bool has_compose_file = project.find_compose_file () != null;
+            bool folder_exists = project.folder_exists;
+            // Without the folder, the containers can still be removed, but not the images and named volumes.
+            bool can_remove_containers = folder_exists ? project.find_compose_file () != null : project.total > 0;
 
             var containers_row = new Adw.SwitchRow () {
                 title = _("Remove Containers and Volumes"),
-                subtitle = _("Also deletes locally built images and all data in the volumes, such as databases"),
-                active = has_compose_file,
-                sensitive = has_compose_file,
+                subtitle = folder_exists
+                    ? _("Also deletes locally built images and all data in the volumes, such as databases")
+                    : _("The folder no longer exists: named volumes and images are kept"),
+                active = can_remove_containers,
+                sensitive = can_remove_containers,
             };
             var folder_row = new Adw.SwitchRow () {
                 title = _("Move Folder to Trash"),
-                subtitle = Utils.home_relative (project.path),
-                active = true,
+                subtitle = folder_exists ? Utils.home_relative (project.path) : _("The folder no longer exists"),
+                active = folder_exists,
+                sensitive = folder_exists,
             };
             var options = new Gtk.ListBox () { selection_mode = Gtk.SelectionMode.NONE };
             options.add_css_class ("boxed-list");
@@ -521,8 +545,14 @@ namespace DockStation {
 
             var switcher_bar = new Adw.ViewSwitcherBar () { stack = stack };
 
+            folder_banner = new Adw.Banner (_("The project folder no longer exists")) {
+                button_label = _("_Remove from List"),
+                action_name = "project.remove",
+            };
+
             var toolbar = new Adw.ToolbarView () { content = stack };
             toolbar.add_top_bar (header);
+            toolbar.add_top_bar (folder_banner);
             toolbar.add_bottom_bar (switcher_bar);
             child = toolbar;
 
@@ -775,9 +805,16 @@ namespace DockStation {
                 return;
             }
             refreshing_services = true;
+            folder_banner.revealed = !project.folder_exists;
 
             try {
-                if (reload_config || !config_loaded) {
+                if (!project.folder_exists) {
+                    // No files to read: the services are just the containers that are left.
+                    config_loaded = false;
+                    service_names = {};
+                    services_group.description = null;
+                    update_logs_services ();
+                } else if (reload_config || !config_loaded) {
                     var config = yield Docker.run (project.path, compose_args ({ "config", "--services" }), cancellable);
                     config_loaded = true;
                     if (config.success) {

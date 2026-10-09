@@ -90,6 +90,71 @@ namespace DockStation {
             }
         }
 
+        /* False once the project folder was deleted or moved: Compose cannot run there any more. */
+        public bool folder_exists {
+            get { return FileUtils.test (path, FileTest.IS_DIR); }
+        }
+
+        /*
+         * Plain `docker` arguments doing what the compose command `args` does, for a project
+         * whose folder is gone. Only stopping and removing containers is possible without the
+         * files: returns null for other commands, and an empty array when there is nothing to do.
+         * Containers are found by folder, not by project name, which other folders may share.
+         */
+        private const string[] FOLDERLESS_COMMANDS = { "stop", "down", "rm" };
+
+        public async string[]? folderless_args (string[] args, Cancellable? cancellable = null) throws Error {
+            if (args.length == 0 || !(args[0] in FOLDERLESS_COMMANDS)) {
+                return null;
+            }
+            string[] services = {};
+            bool volumes = false;
+            for (int i = 1; i < args.length; i++) {
+                if (args[i] == "--volumes" || args[i] == "-v") {
+                    volumes = true;
+                } else if (args[i] == "--rmi") {
+                    i++;
+                } else if (!args[i].has_prefix ("-")) {
+                    services += args[i];
+                }
+            }
+
+            var result = yield Docker.run (null, {
+                "ps", "--all",
+                "--filter", "label=com.docker.compose.project.working_dir=" + path,
+                "--format", Docker.COMPOSE_PS_FORMAT,
+            }, cancellable);
+            if (!result.success) {
+                throw new IOError.FAILED (result.stderr_text.strip ());
+            }
+
+            string[] ids = {};
+            foreach (var container in ComposeContainer.parse (result.stdout_text)) {
+                if (container.working_dir != path || (services.length > 0 && !(container.service in services))
+                    || (args[0] == "stop" && container.state != "running")) {
+                    continue;
+                }
+                ids += container.id;
+            }
+            if (ids.length == 0) {
+                return {};
+            }
+
+            string[] docker_args;
+            if (args[0] == "stop") {
+                docker_args = { "stop" };
+            } else {
+                docker_args = { "rm", "--force" };
+                if (volumes) {
+                    docker_args += "--volumes";
+                }
+            }
+            foreach (unowned string id in ids) {
+                docker_args += id;
+            }
+            return docker_args;
+        }
+
         public static string? find_compose_file_in (string dir) {
             foreach (unowned string name in COMPOSE_FILE_NAMES) {
                 var candidate = Path.build_filename (dir, name);

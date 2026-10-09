@@ -1414,3 +1414,15 @@ msgstr "Deteniendo…"
 #: src/window.vala
 msgid "Restarting…"
 msgstr "Reiniciando…"
+
+#: src/project-view.vala src/window.vala
+msgid "The project folder no longer exists"
+msgstr "La carpeta del proyecto ya no existe"
+
+#: src/project-view.vala
+msgid "The folder no longer exists: named volumes and images are kept"
+msgstr "La carpeta ya no existe: se conservan los volúmenes con nombre y las imágenes"
+
+#: src/project-view.vala
+msgid "The folder no longer exists"
+msgstr "La carpeta ya no existe"
