@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="DockStation es una aplicación de GNOME para gestionar y crear proyectos de Docker Compose: servicios, registros, editor de configuración, plantillas y recursos de Docker.">
+<title>Descargar DockStation</title>
+<link rel="icon" href="dockstation.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a blue band, the app icon's colour, carries the name and the two packages; quieter sections below. */
+:root {
+  --brand: #1a5fb4;
+  --brand-deep: #123f78;
+  --brand-ink: #ffffff;
+  --sky: #99c1f1;
+  --bg: #f6f8fb;
+  --surface: #ffffff;
+  --text: #141c26;
+  --muted: #55626f;
+  --line: #d9e1ea;
+  --code-bg: #edf1f6;
+  --font-display: "Unbounded", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand: #1c5fb0; --brand-deep: #0d2f5c; --brand-ink: #f3f8ff; --sky: #99c1f1;
+    --bg: #0b1017; --surface: #141b24; --text: #e8eef5; --muted: #a2afbd; --line: #2a3542;
+    --code-bg: #1b2430;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --brand: #1c5fb0; --brand-deep: #0d2f5c; --brand-ink: #f3f8ff; --sky: #99c1f1;
+  --bg: #0b1017; --surface: #141b24; --text: #e8eef5; --muted: #a2afbd; --line: #2a3542;
+  --code-bg: #1b2430;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 400 1.0625rem/1.6 var(--font-body);
+}
+.wrap {
+  max-width: 68rem; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+code, .mono { font-family: var(--font-mono); font-size: 0.875em; }
+
+/* Blue band */
+.band {
+  background:
+    radial-gradient(60rem 30rem at 85% -10%, color-mix(in srgb, var(--sky) 22%, transparent), transparent 70%),
+    linear-gradient(160deg, var(--brand), var(--brand-deep));
+  color: var(--brand-ink);
+}
+.band .wrap { padding-block: 1.5rem 3.5rem; display: grid; gap: 3rem; }
+.brand { display: flex; align-items: center; gap: 0.75rem; font: 700 1.125rem var(--font-display); }
+.mark { width: 2.5rem; height: 2.5rem; flex: none; filter: drop-shadow(0 0.25rem 0.5rem rgb(0 0 0 / 0.3)); }
+.version {
+  margin-left: auto; font: 600 0.8125rem var(--font-mono); letter-spacing: 0.02em;
+  padding: 0.25rem 0.6rem; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--brand-ink) 40%, transparent);
+}
+.hero { display: grid; gap: 1rem; max-width: 46rem; }
+.hero h1 { font: 700 clamp(2rem, 5.5vw, 3.5rem)/1.08 var(--font-display); letter-spacing: -0.01em; }
+.hero p { font-size: 1.1875rem; max-width: 38rem; color: color-mix(in srgb, var(--brand-ink) 88%, transparent); }
+
+.packages { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 1rem; }
+.pkg {
+  background: var(--surface); color: var(--text);
+  border-radius: 0.875rem; padding: 1.5rem;
+  display: grid; gap: 1rem; align-content: start; min-width: 0;
+  box-shadow: 0 1.25rem 2.5rem -1.5rem rgb(0 0 0 / 0.45);
+}
+.pkg-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.pkg h2 { font: 700 1.25rem var(--font-display); }
+.pkg .distros { color: var(--muted); font-size: 0.9375rem; }
+.ext { font: 600 0.875rem var(--font-mono); color: var(--brand); }
+:root[data-theme="dark"] .ext { color: var(--sky); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ext { color: var(--sky); } }
+
+.dl {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+  min-height: 3rem; padding: 0 1.25rem; border-radius: 0.625rem; border: 0;
+  background: var(--brand); color: var(--brand-ink);
+  font: 700 1rem var(--font-body); cursor: pointer; text-decoration: none;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.dl:hover { background: var(--brand-deep); }
+.dl:active { transform: translateY(1px); }
+.dl:focus-visible, .copy:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+.dl svg { width: 1.125rem; height: 1.125rem; flex: none; }
+.meta { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; color: var(--muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+
+.cmd { display: grid; gap: 0.375rem; min-width: 0; }
+.cmd-label { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.cmd-box {
+  display: flex; align-items: center; gap: 0.5rem; min-width: 0;
+  background: var(--code-bg); border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.25rem 0.25rem 0.25rem 0.75rem;
+}
+.cmd-box code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; padding-block: 0.5rem; }
+.copy {
+  flex: none; border: 1px solid var(--line); background: var(--surface); color: var(--text);
+  border-radius: 0.375rem; padding: 0.35rem 0.7rem; font: 600 0.8125rem var(--font-body); cursor: pointer;
+}
+.copy:hover { border-color: var(--muted); }
+.sha { font-size: 0.75rem; color: var(--muted); overflow-wrap: anywhere; }
+
+/* Quieter sections */
+main .wrap { padding-block: 3.5rem; display: grid; gap: 3.5rem; }
+.section { display: grid; gap: 1.25rem; }
+.section h2 { font: 700 1.375rem var(--font-display); }
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 1.75rem 2rem; margin: 0; padding: 0; list-style: none; }
+.features li { display: grid; align-content: start; gap: 0.35rem; padding-top: 1rem; border-top: 2px solid var(--brand); min-width: 0; }
+.features h3 { font: 700 1.0625rem var(--font-body); }
+.features p { color: var(--muted); }
+
+.reqs { display: grid; grid-template-columns: max-content 1fr; gap: 0.625rem 1.5rem; margin: 0; max-width: 46rem; }
+.reqs dt { font-weight: 700; }
+.reqs dd { margin: 0; color: var(--muted); min-width: 0; }
+.steps { margin: 0; padding-left: 1.25rem; display: grid; gap: 0.5rem; max-width: 46rem; }
+.steps li::marker { color: var(--brand); font-weight: 700; }
+
+footer { border-top: 1px solid var(--line); }
+footer a { color: inherit; }
+footer .wrap { padding-block: 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; color: var(--muted); font-size: 0.875rem; }
+
+@media (max-width: 34rem) {
+  .reqs { grid-template-columns: 1fr; gap: 0.125rem; }
+  .reqs dd { margin-bottom: 0.625rem; }
+}
+@media (prefers-reduced-motion: reduce) { .dl { transition: none; } }
+</style>
+</head>
+<body>
+
+<header class="band">
+  <div class="wrap">
+    <div class="brand">
+      <img class="mark" src="dockstation.svg" alt="" width="40" height="40">
+      DockStation
+      <span class="version">v@VERSION@</span>
+    </div>
+
+    <div class="hero">
+      <h1>Tus proyectos de Docker Compose, en un solo sitio.</h1>
+      <p>DockStation es una aplicación de GNOME para arrancar, parar y editar tus proyectos, seguir sus registros y crear otros nuevos a partir de plantillas, sin escribir un comando.</p>
+    </div>
+
+    <div class="packages">
+      <article class="pkg" aria-labelledby="deb-title">
+        <div class="pkg-head">
+          <h2 id="deb-title">Debian y Ubuntu</h2>
+          <span class="ext">.deb</span>
+        </div>
+        <p class="distros">Debian 13 y Ubuntu 25.10 o posterior. Ubuntu 24.04 no sirve: su libadwaita es demasiado antigua.</p>
+        <div>
+          <a class="dl" href="@DEB_URL@">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+            Descargar .deb
+          </a>
+        </div>
+        <div class="meta"><span>@DEB_SIZE@</span><span>x86_64</span></div>
+        <div class="cmd">
+          <span class="cmd-label">Instalar</span>
+          <div class="cmd-box">
+            <code>sudo apt install ./@DEB@</code>
+            <button class="copy" type="button">Copiar</button>
+          </div>
+        </div>
+        <p class="sha mono">SHA-256 del .deb: @DEB_SHA256@</p>
+      </article>
+
+      <article class="pkg" aria-labelledby="rpm-title">
+        <div class="pkg-head">
+          <h2 id="rpm-title">Fedora y openSUSE</h2>
+          <span class="ext">.rpm</span>
+        </div>
+        <p class="distros">Fedora 43 o posterior y openSUSE Tumbleweed. En openSUSE, cambia <code>dnf</code> por <code>zypper</code>; allí las versiones nuevas se instalan a mano, descargando el paquete de nuevo.</p>
+        <div>
+          <a class="dl" href="@RPM_URL@">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+            Descargar .rpm
+          </a>
+        </div>
+        <div class="meta"><span>@RPM_SIZE@</span><span>x86_64</span></div>
+        <div class="cmd">
+          <span class="cmd-label">Instalar</span>
+          <div class="cmd-box">
+            <code>sudo dnf install ./@RPM@</code>
+            <button class="copy" type="button">Copiar</button>
+          </div>
+        </div>
+        <p class="sha mono">SHA-256 del .rpm: @RPM_SHA256@</p>
+      </article>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <section class="section" aria-labelledby="features-title">
+      <h2 id="features-title">Qué hace</h2>
+      <ul class="features">
+        <li>
+          <h3>Todos tus proyectos</h3>
+          <p>Añade carpetas de Compose o crea otras nuevas. Cada proyecto muestra si está en marcha, parado o a medias.</p>
+        </li>
+        <li>
+          <h3>Servicios y registros</h3>
+          <p>Arranca, para y reinicia cada servicio, ábrelo en el navegador y sigue sus registros en directo.</p>
+        </li>
+        <li>
+          <h3>Plantillas</h3>
+          <p>Crea proyectos de PHP, WordPress, Drupal, Symfony, Node.js, Python o PostgreSQL, con contraseñas generadas en el <code>.env</code>.</p>
+        </li>
+        <li>
+          <h3>Añade servicios</h3>
+          <p>Bases de datos, servidores web, Adminer o Mailpit, cada uno en su propio archivo de Compose. Si la comprobación falla, se deshace todo.</p>
+        </li>
+        <li>
+          <h3>Editor de configuración</h3>
+          <p>Edita los archivos de Compose, el <code>.env</code> y los Dockerfile con resaltado de sintaxis, y valida la configuración con <code>docker compose config</code>.</p>
+        </li>
+        <li>
+          <h3>Recursos de Docker</h3>
+          <p>Mira cuánto ocupan los contenedores, las imágenes y los volúmenes de cada proyecto, y libera espacio. Cada borrado pide confirmación.</p>
+        </li>
+        <li>
+          <h3>Traefik</h3>
+          <p>Muestra la dirección de los servicios que enruta Traefik, como <code>blog.localhost</code>, y la abre en el navegador.</p>
+        </li>
+        <li>
+          <h3>En segundo plano</h3>
+          <p>Al cerrar la ventana, sigue vigilando tus proyectos, con un icono en la bandeja en los escritorios que lo admiten.</p>
+        </li>
+        <li>
+          <h3>Se actualiza con el sistema</h3>
+          <p>El paquete añade el repositorio de DockStation, así que las nuevas versiones llegan con <code>apt</code> o <code>dnf</code>, como el resto de tus programas. En openSUSE no: <code>zypper</code> no usa este repositorio.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="section" aria-labelledby="reqs-title">
+      <h2 id="reqs-title">Requisitos</h2>
+      <dl class="reqs">
+        <dt>Sistema</dt>
+        <dd>Linux de 64 bits (x86_64), con GTK 4.14 y libadwaita 1.6 o posteriores. El gestor de paquetes las instala solo.</dd>
+        <dt>Docker</dt>
+        <dd>Docker con el complemento de Compose v2 (2.20 o posterior para añadir servicios). El paquete lo recomienda, así que se instala con él salvo que lo desactives.</dd>
+        <dt>Permisos</dt>
+        <dd>Tu usuario debe poder usar Docker sin <code>sudo</code>: <code>sudo usermod -aG docker $USER</code>, y vuelve a iniciar sesión.</dd>
+      </dl>
+    </section>
+
+    <section class="section" aria-labelledby="start-title">
+      <h2 id="start-title">Primeros pasos</h2>
+      <ol class="steps">
+        <li>Instala el paquete y comprueba que <code>docker ps</code> funciona sin <code>sudo</code> en una terminal.</li>
+        <li>Abre DockStation desde el menú de aplicaciones.</li>
+        <li>Pulsa Ctrl+O para añadir una carpeta que ya tenga un proyecto de Compose, o Ctrl+N para crear uno nuevo a partir de una plantilla.</li>
+        <li>Pulsa <b>Iniciar</b> en el proyecto y sigue sus servicios y registros desde la misma ventana.</li>
+      </ol>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>DockStation @VERSION@ · Agustín García · <a href="https://github.com/agustingv/dockstation">Código fuente</a></span>
+    <span>DockStation no está afiliado a Docker, Inc.</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  document.querySelectorAll(".copy").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const code = btn.parentElement.querySelector("code");
+      try {
+        await navigator.clipboard.writeText(code.textContent);
+        btn.textContent = "Copiado";
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents(code);
+        const sel = getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        btn.textContent = "Seleccionado";
+      }
+      setTimeout(() => { btn.textContent = "Copiar"; }, 1800);
+    });
+  });
+})();
+</script>
+</body>
+</html>

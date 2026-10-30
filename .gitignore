@@ -18,3 +18,18 @@
 *.swp
 *~
 .cache/
+
+# Package builds
+/debian/changelog
+/debian/.debhelper/
+/debian/debhelper-build-stamp
+/debian/dockstation/
+/debian/files
+/debian/*.substvars
+/debian/*.debhelper.log
+/debian/*.debhelper
+/obj-*/
+/redhat-linux-build/
+/.rpmbuild/
+/dist-packages/
+/public-site/

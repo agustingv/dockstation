@@ -1,0 +1,2 @@
+packaging/dockstation.sources etc/apt/sources.list.d
+packaging/dockstation.gpg etc/apt/keyrings

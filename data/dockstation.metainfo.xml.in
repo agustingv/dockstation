@@ -15,6 +15,7 @@
   <developer id="io.github.agustingv">
     <name>Agustin Garcia</name>
   </developer>
+  <url type="homepage">https://agustingv.github.io/dockstation/</url>
   <launchable type="desktop-id">@APP_ID@.desktop</launchable>
   <content_rating type="oars-1.1"/>
   <requires>

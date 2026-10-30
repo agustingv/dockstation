@@ -1,0 +1,135 @@
+# Pushing a tag like v0.2.0 builds the .deb and .rpm, publishes them as a
+# GitHub Release and updates the download page on GitHub Pages.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check the tag matches the app version
+        id: version
+        run: |
+          version=$(sed -n "s/^ *version: '\(.*\)',$/\1/p" meson.build)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match version $version in meson.build"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  deb:
+    needs: version
+    runs-on: ubuntu-latest
+    # The oldest supported Debian-based system, so the package also works on newer ones.
+    container: debian:13
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install build dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential
+          apt-get build-dep -y .
+
+      - name: Build the package
+        run: packaging/build-deb.sh "${{ needs.version.outputs.version }}" dist-packages
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: deb
+          path: dist-packages
+
+  rpm:
+    needs: version
+    runs-on: ubuntu-latest
+    # The oldest supported Fedora, so the package also works on newer ones.
+    container: fedora:43
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install build dependencies
+        run: |
+          dnf install -y rpm-build 'dnf-command(builddep)'
+          dnf builddep -y packaging/dockstation.spec
+
+      - name: Build the package
+        run: packaging/build-rpm.sh "${{ needs.version.outputs.version }}" dist-packages
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: rpm
+          path: dist-packages
+
+  release:
+    needs: [version, deb, rpm]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist-packages
+          merge-multiple: true
+
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd dist-packages && sha256sum * > SHA256SUMS)
+          gh release create "$GITHUB_REF_NAME" dist-packages/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "DockStation ${{ needs.version.outputs.version }}" \
+            --generate-notes
+
+  pages:
+    needs: [version, release]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist-packages
+          merge-multiple: true
+
+      - name: Render the download page
+        run: |
+          python3 site/render.py "${{ needs.version.outputs.version }}" \
+            dist-packages/*.deb dist-packages/*.rpm \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME" \
+            public-site
+
+      - name: Build the APT and DNF repositories
+        env:
+          REPO_SIGNING_KEY: ${{ secrets.REPO_SIGNING_KEY }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev apt-utils createrepo-c
+          echo "$REPO_SIGNING_KEY" | gpg --batch --import
+          site/repos.sh dist-packages/*.deb dist-packages/*.rpm public-site
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: public-site
+
+      - id: deploy
+        uses: actions/deploy-pages@v5

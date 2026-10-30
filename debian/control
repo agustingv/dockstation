@@ -1,0 +1,31 @@
+Source: dockstation
+Section: devel
+Priority: optional
+Maintainer: Agustin Garcia <contacto@agustin-garcia.es>
+Rules-Requires-Root: no
+Build-Depends:
+ appstream,
+ debhelper-compat (= 13),
+ desktop-file-utils,
+ gettext,
+ libadwaita-1-dev (>= 1.6),
+ libglib2.0-dev (>= 2.76),
+ libgtk-4-dev (>= 4.14),
+ libgtksourceview-5-dev (>= 5.10),
+ libportal-gtk4-dev (>= 0.7),
+ meson (>= 1.0),
+ ninja-build,
+ valac (>= 0.56),
+Standards-Version: 4.7.2
+Homepage: https://agustingv.github.io/dockstation/
+
+Package: dockstation
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Recommends:
+ docker.io | docker-ce,
+ docker-compose-v2 | docker-compose-plugin | docker-compose,
+Description: Manage and create Docker Compose projects
+ DockStation keeps all your Docker Compose projects in one place. Start, stop
+ and restart services, follow their logs, edit the configuration and create new
+ projects from ready-made templates.
