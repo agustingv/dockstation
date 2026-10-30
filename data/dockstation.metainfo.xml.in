@@ -27,6 +27,11 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.1.1" date="2026-10-30">
+      <description>
+        <p>Packages for Debian, Ubuntu, Fedora and openSUSE, with a download page and updates through APT and DNF.</p>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-10-02">
       <description>
         <p>First release.</p>

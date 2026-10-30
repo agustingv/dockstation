@@ -1,3 +1,10 @@
+## DockStation v0.1.1
+
+### Packaging
+- `.deb` packages for Debian 13 and Ubuntu 25.10 or newer, and `.rpm` packages for Fedora 43 or newer and openSUSE Tumbleweed.
+- A [download page](https://agustingv.github.io/dockstation/) on GitHub Pages.
+- The packages add a signed repository, so DockStation updates through APT and DNF. On openSUSE, new versions have to be installed by hand.
+
 ## DockStation v0.1.0
 
 First public release of DockStation, a GNOME app to manage your Docker Compose projects.
