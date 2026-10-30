@@ -30,9 +30,8 @@ metainfo_file = i18n.merge_file(
 
 appstreamcli = find_program('appstreamcli', required: false)
 if appstreamcli.found()
-  # TODO: add a <url type="homepage"> once the project is published, then drop the override.
   test('validate-metainfo', appstreamcli,
-    args: ['validate', '--no-net', '--explain', '--override=url-homepage-missing=info', metainfo_file],
+    args: ['validate', '--no-net', '--explain', metainfo_file],
   )
 endif
 

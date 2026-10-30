@@ -75,6 +75,28 @@ Search (or just start typing) filters by name, image or project. Measuring sizes
 - **Install Composer** adds Composer to PHP images. It is optional for PHP App (on by default) and WordPress (off by default). It is always on for Symfony, which needs it, and for Drupal, whose image already includes it.
 - **Symfony** runs as your user, so the files it creates in `./app` belong to you. With PHP versions older than 8.4 it installs Symfony 7.4 LTS.
 
+## Install
+
+Download the `.deb` or `.rpm` from the [download page](https://agustingv.github.io/dockstation/). It needs Debian 13, Ubuntu 25.10, Fedora 43, openSUSE Tumbleweed or newer: Ubuntu 24.04's libadwaita is too old.
+
+The packages install a repository, published on GitHub Pages with each release, so DockStation updates with the rest of the system (`apt upgrade`, `dnf upgrade` or the graphical updater):
+
+- APT: `/etc/apt/sources.list.d/dockstation.sources`, with the key in `/etc/apt/keyrings/dockstation.gpg`.
+- DNF: `/etc/yum.repos.d/dockstation.repo`, with the key in `/etc/pki/rpm-gpg/RPM-GPG-KEY-dockstation`.
+
+These files are in `packaging/`. `zypper` does not read `/etc/yum.repos.d`, so on openSUSE new versions have to be downloaded and installed by hand.
+
+## Publish a release
+
+1. Update the version in `meson.build` and add the release to `data/dockstation.metainfo.xml.in`.
+2. Commit and tag: `git tag v0.2.0 && git push origin main v0.2.0`.
+
+The `.github/workflows/release.yml` workflow builds the `.deb` on Debian 13 and the `.rpm` on Fedora 43 (`debian/`, `packaging/`), publishes them in a GitHub Release, and updates the download page. The page is the `site/index.html` template, which `site/render.py` fills in with the version, links, sizes and SHA-256 sums.
+
+`site/repos.sh` creates the repositories and signs them with the private key in the repository's `REPO_SIGNING_KEY` secret (exported with `gpg --export-secret-keys --armor`). If the key changes, also change the public keys in `packaging/`.
+
+The repository needs **Settings → Pages → Source: GitHub Actions**, and tags matching `v*` allowed under **Settings → Environments → github-pages**.
+
 ## Requirements
 
 - `valac` ≥ 0.56, `meson` ≥ 1.0, `ninja`

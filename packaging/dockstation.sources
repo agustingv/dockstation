@@ -1,0 +1,7 @@
+# Updates for DockStation, installed with its package.
+Types: deb
+URIs: https://agustingv.github.io/dockstation/apt
+Suites: stable
+Components: main
+Architectures: amd64
+Signed-By: /etc/apt/keyrings/dockstation.gpg
