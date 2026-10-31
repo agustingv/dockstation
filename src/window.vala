@@ -1,7 +1,5 @@
 namespace DockStation {
     public class Window : Adw.ApplicationWindow {
-        private const uint REFRESH_INTERVAL_SECONDS = 4;
-
         private ProjectStore store;
         private Gtk.ListBox project_list;
         private Gtk.Stack sidebar_stack;
@@ -20,16 +18,22 @@ namespace DockStation {
         private bool refreshing = false;
         private bool close_confirmed = false;
         private bool opening_initial_project = false;
-        private uint refresh_source_id = 0;
+        private ProjectMonitor monitor;
         private Background background = new Background ();
-        private TrayIcon? tray = null;
-        // Projects with a command started from the tray, and what it is doing ("Starting…").
-        private HashTable<string, string> tray_busy = new HashTable<string, string> (str_hash, str_equal);
+        private TrayController tray;
         // Set by Quit: closing the window then ends the app even when it runs in the background.
         private bool quitting = false;
 
         public Window (Application app) {
             Object (application: app);
+            // Here and not in construct: the window has no application until Object () returns.
+            tray = new TrayController (app, store);
+            tray.open_requested.connect (() => present ());
+            tray.project_open_requested.connect ((project) => {
+                select_project (project);
+                present ();
+            });
+            tray.command_finished.connect ((project) => on_tray_command_finished.begin (project));
         }
 
         construct {
@@ -43,6 +47,8 @@ namespace DockStation {
             store = new ProjectStore ();
             store.load ();
             settings = new AppSettings ();
+            monitor = new ProjectMonitor (store);
+            monitor.tick.connect (() => refresh.begin ());
 
             ActionEntry[] entries = {
                 { "new-project", on_new_project },
@@ -79,10 +85,7 @@ namespace DockStation {
             }
 
             refresh.begin ();
-            refresh_source_id = Timeout.add_seconds (REFRESH_INTERVAL_SECONDS, () => {
-                refresh.begin ();
-                return Source.CONTINUE;
-            });
+            monitor.start ();
         }
 
         private void build_ui () {
@@ -406,145 +409,20 @@ namespace DockStation {
             update_background_status ();
         }
 
-        private static bool is_running (Project project) {
-            return project.state == ProjectState.RUNNING || project.state == ProjectState.PARTIAL;
-        }
-
-        /* "2 projects running" */
-        private string running_summary () {
-            int running = 0;
-            for (uint i = 0; i < store.projects.get_n_items (); i++) {
-                if (is_running ((Project) store.projects.get_item (i))) {
-                    running++;
-                }
-            }
-            return running == 0
-                ? _("No projects running")
-                : ngettext ("%d project running", "%d projects running", running).printf (running);
-        }
-
         /* The status GNOME shows while the window is closed, and the tray icon. */
         private void update_background_status () {
             if (settings.run_in_background) {
-                background.set_status.begin (running_summary ());
+                background.set_status.begin (store.running_summary ());
             }
-            update_tray ();
+            tray.update (settings.run_in_background);
         }
 
-        /* --------------------------------------------------------------- tray icon */
-
-        /* The tray icon is shown while running in the background, which is when it is useful. */
-        private void update_tray () {
-            if (!settings.run_in_background) {
-                if (tray != null) {
-                    tray.hide ();
-                }
-                return;
-            }
-            if (tray == null) {
-                var connection = application.get_dbus_connection ();
-                if (connection == null) {
-                    return;
-                }
-                tray = new TrayIcon (connection);
-                tray.item.activated.connect (() => present ());
-                tray.menu.item_activated.connect (on_tray_item);
-            }
-            tray.item.set_description (running_summary ());
-            tray.menu.set_items (tray_items ());
-            tray.show ();
-        }
-
-        private TrayMenuItem[] tray_items () {
-            TrayMenuItem[] items = { new TrayMenuItem (_("Open DockStation"), "open") };
-            if (store.projects.get_n_items () > 0) {
-                items += new TrayMenuItem.separator ();
-            }
-            for (uint i = 0; i < store.projects.get_n_items (); i++) {
-                var project = (Project) store.projects.get_item (i);
-                var busy = tray_busy[project.path];
-                var running = is_running (project);
-                var entry = new TrayMenuItem ("%s — %s".printf (TrayMenuItem.escape (project.name), busy ?? project.status_label));
-                entry.children = {
-                    new TrayMenuItem (_("Open"), "open-project", project),
-                    new TrayMenuItem (running ? _("Stop") : _("Start"), running ? "stop" : "start", project) { enabled = busy == null },
-                    new TrayMenuItem (_("Restart"), "restart", project) { enabled = busy == null && running },
-                };
-                items += entry;
-            }
-            items += new TrayMenuItem.separator ();
-            items += new TrayMenuItem (_("Quit"), "quit");
-            return items;
-        }
-
-        private void on_tray_item (TrayMenuItem item) {
-            var project = item.target as Project;
-            switch (item.action) {
-                case "open":
-                    present ();
-                    break;
-                case "quit":
-                    application.activate_action ("quit", null);
-                    break;
-                case "open-project":
-                    select_project (project);
-                    present ();
-                    break;
-                case "start":
-                    run_from_tray.begin (project, { "up", "--detach" }, _("Starting…"), _("Could not start “%s”"));
-                    break;
-                case "stop":
-                    run_from_tray.begin (project, { "stop" }, _("Stopping…"), _("Could not stop “%s”"));
-                    break;
-                case "restart":
-                    run_from_tray.begin (project, { "restart" }, _("Restarting…"), _("Could not restart “%s”"));
-                    break;
-            }
-        }
-
-        /*
-         * Runs a compose command for a project that may not be open, with the window possibly
-         * hidden: failures are reported with a desktop notification instead of a toast.
-         */
-        private async void run_from_tray (Project project, string[] args, string busy_label, string failure) {
-            if (tray_busy.contains (project.path)) {
-                return;
-            }
-            tray_busy[project.path] = busy_label;
-            update_tray ();
-            try {
-                string[]? docker_args = Docker.compose_args (args);
-                if (!project.folder_exists) {
-                    docker_args = yield project.folderless_args (args);
-                    if (docker_args == null) {
-                        throw new IOError.NOT_FOUND (_("The project folder no longer exists"));
-                    }
-                }
-                var result = docker_args.length == 0
-                    ? new CommandResult ()
-                    : yield Docker.run (project.folder_exists ? project.path : null, docker_args);
-                if (!result.success) {
-                    notify_failure (project, failure.printf (project.name), result.stderr_text);
-                }
-            } catch (Error e) {
-                notify_failure (project, failure.printf (project.name), e.message);
-            }
-            tray_busy.remove (project.path);
+        /* A command from the tray may have changed the project that is open. */
+        private async void on_tray_command_finished (Project project) {
             yield refresh ();
-            update_tray ();
             if (current_view != null && current_view.project == project) {
                 current_view.refresh_services.begin ();
             }
-        }
-
-        private void notify_failure (Project project, string title, string details) {
-            var notification = new Notification (title);
-            var lines = Utils.split_lines (details);
-            if (lines.length > 0) {
-                // Compose ends with the reason, such as "Error response from daemon: …".
-                notification.set_body (lines[lines.length - 1]);
-            }
-            application.send_notification ("command-" + project.path, notification);
         }
 
         public override bool close_request () {
@@ -561,10 +439,7 @@ namespace DockStation {
                 });
                 return true;
             }
-            if (refresh_source_id != 0) {
-                Source.remove (refresh_source_id);
-                refresh_source_id = 0;
-            }
+            monitor.stop ();
             if (current_view != null) {
                 current_view.shutdown ();
             }
@@ -689,36 +564,11 @@ namespace DockStation {
             }
             refreshing = true;
 
-            GenericArray<ComposeContainer>? containers = null;
-            try {
-                // One call for every project, and for the open project's services too.
-                var result = yield Docker.run (null, {
-                    "ps", "--all",
-                    "--filter", "label=com.docker.compose.project",
-                    "--format", Docker.COMPOSE_PS_FORMAT,
-                });
-
-                if (result.success) {
-                    docker_banner.revealed = false;
-                    containers = ComposeContainer.parse (result.stdout_text);
-                    var running = new HashTable<string, int> (str_hash, str_equal);
-                    var total = new HashTable<string, int> (str_hash, str_equal);
-                    foreach (var container in containers) {
-                        total[container.working_dir] = total[container.working_dir] + 1;
-                        if (container.state == "running") {
-                            running[container.working_dir] = running[container.working_dir] + 1;
-                        }
-                    }
-                    for (uint i = 0; i < store.projects.get_n_items (); i++) {
-                        var project = (Project) store.projects.get_item (i);
-                        project.update_counts (running[project.path], total[project.path]);
-                    }
-                } else {
-                    show_docker_error (result.stderr_text);
-                }
-            } catch (Error e) {
-                show_docker_error (e.message);
+            var containers = yield monitor.check ();
+            if (monitor.error != null) {
+                docker_banner.title = monitor.error;
             }
+            docker_banner.revealed = monitor.error != null;
 
             // A hidden window only needs the project states, for the background status.
             if (current_view != null && visible) {
@@ -728,16 +578,5 @@ namespace DockStation {
             refreshing = false;
         }
 
-        private void show_docker_error (string message) {
-            var first_line = Utils.first_line (message) ?? "";
-            if (first_line.contains ("No such file or directory")) {
-                first_line = _("Docker is not installed");
-            }
-            docker_banner.title = first_line;
-            docker_banner.revealed = true;
-            for (uint i = 0; i < store.projects.get_n_items (); i++) {
-                ((Project) store.projects.get_item (i)).mark_unknown ();
-            }
-        }
     }
 }

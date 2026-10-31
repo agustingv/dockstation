@@ -60,6 +60,19 @@ namespace DockStation {
             return null;
         }
 
+        /* "2 projects running" */
+        public string running_summary () {
+            int running = 0;
+            for (uint i = 0; i < projects.get_n_items (); i++) {
+                if (((Project) projects.get_item (i)).is_running) {
+                    running++;
+                }
+            }
+            return running == 0
+                ? _("No projects running")
+                : ngettext ("%d project running", "%d projects running", running).printf (running);
+        }
+
         public void add (Project project) {
             projects.insert_sorted (project, compare);
             save ();

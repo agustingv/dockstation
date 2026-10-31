@@ -69,6 +69,11 @@ namespace DockStation {
             }
         }
 
+        /* At least one of its containers is running. */
+        public bool is_running {
+            get { return state == ProjectState.RUNNING || state == ProjectState.PARTIAL; }
+        }
+
         public string status_label {
             owned get { return state.to_label (running, total); }
         }

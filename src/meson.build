@@ -9,6 +9,9 @@ dockstation_core_sources = files(
   'project-store.vala',
   'project-row.vala',
   'project-view.vala',
+  'services-page.vala',
+  'editor-page.vala',
+  'logs-page.vala',
   'service-row.vala',
   'log-view.vala',
   'templates.vala',
@@ -26,6 +29,8 @@ dockstation_core_sources = files(
   'dialogs.vala',
   'background.vala',
   'tray-icon.vala',
+  'tray-controller.vala',
+  'project-monitor.vala',
 )
 
 dockstation_deps = [
