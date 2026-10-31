@@ -3,7 +3,9 @@ data/dockstation.metainfo.xml.in
 src/add-service.vala
 src/application.vala
 src/background.vala
+src/command-runner.vala
 src/database-init.vala
+src/database-reset.vala
 src/dialogs.vala
 src/editor-page.vala
 src/logs-page.vala

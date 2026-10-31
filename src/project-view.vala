@@ -23,6 +23,7 @@ namespace DockStation {
         private EditorPage editor;
         private LogsPage logs;
         private LogView output_view;
+        private OutputRunner output_runner;
 
         public ProjectView (Project project) {
             Object (project: project);
@@ -175,14 +176,18 @@ namespace DockStation {
                 toast (failure_message);
                 stack.visible_child_name = "output";
             }
-            set_busy (false);
+            yield finish_commands ();
+            return success;
+        }
 
+        /* What the view does after running commands that may have changed the containers. */
+        private async void finish_commands () {
+            set_busy (false);
             containers_changed ();
             yield refresh_services (false);
             if (logs.started) {
                 logs.restart ();
             }
-            return success;
         }
 
         private async void confirm_down_volumes () {
@@ -422,6 +427,7 @@ namespace DockStation {
 
         private Gtk.Widget build_output_page () {
             output_view = new LogView ();
+            output_runner = new OutputRunner (project.path, output_view, cancellable);
 
             var hint = new Gtk.Label (_("Output of the commands run on this project")) {
                 xalign = 0,
@@ -523,27 +529,25 @@ namespace DockStation {
                 return;
             }
 
-            // The container first: once the service is gone from the files, Compose no longer knows it.
-            if (!(yield run_compose ({ "rm", "--stop", "--force", "--volumes", service }, "",
-                                     _("Could not remove the “%s” container").printf (service)))) {
-                return;
-            }
-            if (data_row.active) {
-                foreach (unowned string volume in removal.volumes) {
-                    try {
-                        if (!(yield run_step ({ "volume", "rm", volume }))) {
-                            toast (_("Could not delete the volume %s").printf (volume));
-                        }
-                    } catch (Error e) {
-                        toast (e.message);
-                    }
-                }
-            }
-
+            set_busy (true);
+            string[] problems = {};
+            string? failure = null;
             try {
-                ServiceRemover.apply (removal);
+                yield ServiceRemover.remove (output_runner, removal, data_row.active, out problems);
+                output_view.append ("✔ " + _("Done") + "\n\n");
+            } catch (IOError.CANCELLED e) {
+                return;
             } catch (Error e) {
-                toast (_("Could not remove “%s”: %s").printf (service, e.message));
+                failure = e.message;
+            }
+            yield finish_commands ();
+
+            foreach (unowned string problem in problems) {
+                toast (problem);
+            }
+            if (failure != null) {
+                toast (failure);
+                stack.visible_child_name = "output";
                 return;
             }
             toast (_("Removed “%s”").printf (service));
@@ -553,67 +557,20 @@ namespace DockStation {
 
         /* --------------------------------------------------------- database reset */
 
-        /* Refuses to empty folders that obviously hold more than the database. */
-        private string? unsafe_data_folder (string source) {
-            var folder = File.new_for_path (source);
-            var home = File.new_for_path (Environment.get_home_dir ());
-            var project_folder = File.new_for_path (project.path);
-            if (folder.get_parent () == null || folder.equal (home) || folder.equal (project_folder)
-                || home.has_prefix (folder) || project_folder.has_prefix (folder)) {
-                return _("The data folder “%s” is not a dedicated database folder, so it will not be emptied.")
-                    .printf (Utils.home_relative (source));
-            }
-            return null;
-        }
-
-        private async bool run_step (owned string[] docker_args) throws Error {
-            output_view.append ("$ docker %s\n".printf (string.joinv (" ", docker_args)));
-            int status = yield Docker.stream (project.path, docker_args, (line) => {
-                output_view.append (line + "\n");
-            }, cancellable);
-            if (status != 0) {
-                output_view.append ("✘ " + _("Exited with status %d").printf (status) + "\n\n");
-            }
-            return status == 0;
-        }
-
         private async void reset_database (string service, DatabaseInit database) {
             if (busy) {
                 return;
             }
-            if (database.data_type == "bind") {
-                var problem = unsafe_data_folder (database.data_source);
-                if (problem != null) {
-                    toast (problem);
-                    return;
-                }
-            }
-
-            string storage;
-            if (database.data_type == "bind") {
-                storage = _("the folder “%s”").printf (Utils.home_relative (database.data_source));
-            } else if (database.data_is_anonymous_volume) {
-                storage = _("an unnamed volume");
-            } else {
-                storage = _("the volume “%s”").printf (database.data_volume);
-            }
-
-            string scripts = "";
-            const int MAX_LISTED = 8;
-            for (int i = 0; i < database.init_files.length && i < MAX_LISTED; i++) {
-                scripts += "\n• " + Path.get_basename (database.init_files[i]);
-            }
-            if (database.init_files.length > MAX_LISTED) {
-                scripts += "\n• " + _("and %d more").printf (database.init_files.length - MAX_LISTED);
-            }
-            foreach (unowned string volume in database.init_volumes) {
-                scripts += "\n• " + _("the scripts in the volume “%s”").printf (volume);
+            var problem = DatabaseReset.unsafe_data_folder (database, project.path);
+            if (problem != null) {
+                toast (problem);
+                return;
             }
 
             if (!(yield Dialogs.confirm (this,
                     _("Reset Database “%s”?").printf (service),
-                    _("All data in this %s database, stored in %s, is deleted permanently. This cannot be undone.").printf (database.engine, storage)
-                    + "\n\n" + _("The database is then created again, running its init scripts:") + scripts,
+                    _("All data in this %s database, stored in %s, is deleted permanently. This cannot be undone.").printf (database.engine, DatabaseReset.storage_description (database))
+                    + "\n\n" + _("The database is then created again, running its init scripts:") + DatabaseReset.scripts_description (database),
                     _("_Reset Database")))) {
                 return;
             }
@@ -623,24 +580,7 @@ namespace DockStation {
             output_view.append ("# " + _("Resetting the “%s” database").printf (service) + "\n");
             bool success = false;
             try {
-                // 1. Stop and remove the container; --volumes also drops an unnamed data volume.
-                if ((yield run_step (Docker.compose_args ({ "stop", service })))
-                    && (yield run_step (Docker.compose_args ({ "rm", "--force", "--volumes", service })))) {
-                    // 2. Empty the data, so the entrypoint initialises the database again.
-                    bool emptied = true;
-                    if (database.data_type == "volume" && !database.data_is_anonymous_volume) {
-                        emptied = yield run_step ({ "volume", "rm", database.data_volume });
-                    } else if (database.data_type == "bind") {
-                        // Run as root inside the database image: the files belong to its user.
-                        emptied = yield run_step ({
-                            "run", "--rm", "--entrypoint", "sh", "--volume", database.data_source + ":/reset",
-                            database.image_id, "-c", "find /reset -mindepth 1 -delete"
-                        });
-                    }
-                    // 3. Start it again, even after a failure, so the service is not left down.
-                    bool started = yield run_step (Docker.compose_args ({ "up", "--detach", service }));
-                    success = emptied && started;
-                }
+                success = yield DatabaseReset.run (output_runner, service, database, project.path);
             } catch (IOError.CANCELLED e) {
                 return;
             } catch (Error e) {
