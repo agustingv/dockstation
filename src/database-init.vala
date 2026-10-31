@@ -9,7 +9,6 @@ namespace DockStation {
     public class DatabaseInit : Object {
         public const string INIT_DIR = "/docker-entrypoint-initdb.d";
 
-        public string container_id;
         public string image_id;
         public string engine;
 
@@ -106,83 +105,27 @@ namespace DockStation {
             get { return data_destination != null && (init_files.length > 0 || init_volumes.length > 0); }
         }
 
-        /*
-         * Inspects containers (by full or short ID) and returns the resettable
-         * databases among them, keyed by the IDs as given.
-         */
-        public static async HashTable<string, DatabaseInit> inspect (string[] container_ids, Cancellable? cancellable)
-                throws Error {
-            var result = new HashTable<string, DatabaseInit> (str_hash, str_equal);
-            if (container_ids.length == 0) {
-                return result;
-            }
-
-            // Mounts come back as maps: bind mounts have no "Name" key, hence `index`.
-            string[] args = {
-                "inspect", "--type", "container", "--format",
-                "C\t{{.Id}}\t{{.Image}}\n"
-                + "{{range .Mounts}}M\t{{.Type}}\t{{index . \"Name\"}}\t{{.Source}}\t{{.Destination}}\n{{end}}"
-                + "{{range .Config.Env}}E\t{{.}}\n{{end}}"
-            };
-            foreach (unowned string id in container_ids) {
-                args += id;
-            }
-            var output = yield Docker.run (null, args, cancellable);
-
-            DatabaseInit? current = null;
-            string? pgdata = null;
-            string[] mounts = {};
-            foreach (unowned string line in (output.stdout_text + "C\n").split ("\n")) {
-                var f = line.split ("\t");
-                if (f[0] == "C") {
-                    if (current != null) {
-                        current.finish (mounts, pgdata);
-                        // Key by the ID the caller passed, which may be the short form.
-                        foreach (unowned string id in container_ids) {
-                            if (current.can_reset && current.container_id.has_prefix (id)) {
-                                result[id] = current;
-                            }
-                        }
-                    }
-                    if (f.length < 3) {
-                        current = null;
-                        continue;
-                    }
-                    current = new DatabaseInit ();
-                    current.container_id = f[1];
-                    current.image_id = f[2];
-                    pgdata = null;
-                    mounts = {};
-                } else if (current != null && f[0] == "M" && f.length >= 5) {
-                    mounts += line;
-                } else if (current != null && f[0] == "E" && line.has_prefix ("E\tPGDATA=")) {
-                    pgdata = line.substring ("E\tPGDATA=".length);
-                }
-            }
-            return result;
-        }
-
-        private void finish (string[] mounts, string? pgdata) {
-            foreach (unowned string line in mounts) {
-                var f = line.split ("\t");
-                var type = f[1];
-                var name = f[2] == "<no value>" ? "" : f[2];
-                var source = f[3];
-                var destination = f[4];
-
+        /* The container's database, or null if it is not one that can be reset. */
+        public static DatabaseInit? from_container (ContainerDetails container) {
+            var database = new DatabaseInit ();
+            database.image_id = container.image_id;
+            var pgdata = container.environment["PGDATA"];
+            foreach (var mount in container.mounts) {
+                unowned string destination = mount.destination;
                 if (destination == INIT_DIR || destination.has_prefix (INIT_DIR + "/")) {
-                    add_init_mount (type, name, source);
+                    database.add_init_mount (mount.mount_type, mount.name, mount.source);
                     continue;
                 }
                 var detected = destination == pgdata ? "PostgreSQL" : engine_for_data_dir (destination);
-                if (detected != null && (type == "volume" || type == "bind")) {
-                    engine = detected;
-                    data_type = type;
-                    data_volume = name;
-                    data_source = source;
-                    data_destination = destination;
+                if (detected != null && (mount.mount_type == "volume" || mount.mount_type == "bind")) {
+                    database.engine = detected;
+                    database.data_type = mount.mount_type;
+                    database.data_volume = mount.name;
+                    database.data_source = mount.source;
+                    database.data_destination = destination;
                 }
             }
+            return database.can_reset ? database : null;
         }
     }
 }

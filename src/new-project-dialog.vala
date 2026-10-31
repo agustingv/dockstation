@@ -25,19 +25,9 @@ namespace DockStation {
             title = _("New Project");
             content_width = 520;
 
-            var cancel_button = new Gtk.Button.with_mnemonic (_("_Cancel"));
-            cancel_button.clicked.connect (() => close ());
-
             create_button = new Gtk.Button.with_mnemonic (_("C_reate"));
-            create_button.add_css_class ("suggested-action");
             create_button.clicked.connect (create);
-
-            var header = new Adw.HeaderBar () {
-                show_start_title_buttons = false,
-                show_end_title_buttons = false,
-            };
-            header.pack_start (cancel_button);
-            header.pack_end (create_button);
+            var header = Dialogs.action_header (this, create_button);
 
             // General
             name_row = new Adw.EntryRow () { title = _("Project Name") };
@@ -48,11 +38,7 @@ namespace DockStation {
                 }
             });
 
-            var browse_button = new Gtk.Button.from_icon_name ("folder-open-symbolic") {
-                tooltip_text = _("Choose Location"),
-                valign = Gtk.Align.CENTER,
-            };
-            browse_button.add_css_class ("flat");
+            var browse_button = Utils.flat_icon_button ("folder-open-symbolic", _("Choose Location"));
             browse_button.clicked.connect (choose_folder);
 
             location_row = new Adw.ActionRow () {

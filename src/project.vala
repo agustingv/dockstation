@@ -69,6 +69,11 @@ namespace DockStation {
             }
         }
 
+        /* At least one of its containers is running. */
+        public bool is_running {
+            get { return state == ProjectState.RUNNING || state == ProjectState.PARTIAL; }
+        }
+
         public string status_label {
             owned get { return state.to_label (running, total); }
         }
@@ -119,17 +124,10 @@ namespace DockStation {
                 }
             }
 
-            var result = yield Docker.run (null, {
-                "ps", "--all",
-                "--filter", "label=com.docker.compose.project.working_dir=" + path,
-                "--format", Docker.COMPOSE_PS_FORMAT,
-            }, cancellable);
-            if (!result.success) {
-                throw new IOError.FAILED (result.stderr_text.strip ());
-            }
+            var containers = yield Docker.compose_containers (path, cancellable);
 
             string[] ids = {};
-            foreach (var container in ComposeContainer.parse (result.stdout_text)) {
+            foreach (var container in containers) {
                 if (container.working_dir != path || (services.length > 0 && !(container.service in services))
                     || (args[0] == "stop" && container.state != "running")) {
                     continue;
@@ -203,11 +201,7 @@ namespace DockStation {
                 return {};
             }
             names.sort (strcmp);
-            string[] sorted = {};
-            foreach (unowned string name in names) {
-                sorted += name;
-            }
-            return sorted;
+            return Utils.to_array (names);
         }
 
         /*
@@ -246,17 +240,11 @@ namespace DockStation {
 
             string? value = null;
             string separator = ":";
-            foreach (unowned string raw in contents.split ("\n")) {
-                var line = raw.strip ();
-                if (line.has_prefix ("export ")) {
-                    line = line.substring (7).strip ();
-                }
-                var equals = line.index_of ("=");
-                if (line.has_prefix ("#") || equals <= 0) {
+            foreach (unowned string line in contents.split ("\n")) {
+                string key, val;
+                if (!Utils.parse_env_line (line, out key, out val)) {
                     continue;
                 }
-                var key = line.substring (0, equals).strip ();
-                var val = line.substring (equals + 1).strip ();
                 if (val.length >= 2 && (val[0] == '"' || val[0] == '\'') && val[val.length - 1] == val[0]) {
                     val = val.substring (1, val.length - 2);
                 }
@@ -308,11 +296,7 @@ namespace DockStation {
                 int depth = a.split ("/").length - b.split ("/").length;
                 return depth != 0 ? depth : strcmp (a, b);
             });
-            string[] result = {};
-            for (uint i = 0; i < found.length; i++) {
-                result += found[i];
-            }
-            return result;
+            return Utils.to_array (found);
         }
 
         private async void search_dockerfiles (File root, File dir, int depth, GenericArray<string> found,

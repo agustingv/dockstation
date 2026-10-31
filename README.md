@@ -349,8 +349,13 @@ The built-in services are compiled into the app: after adding a file to `data/se
 | `src/application.vala` | `Adw.Application`, app actions and shortcuts |
 | `src/background.vala` | Running in the background through the portal, and the status GNOME shows |
 | `src/tray-icon.vala` | Tray icon and its menu (StatusNotifierItem and DBusMenu over D-Bus) |
-| `src/window.vala` | Main window: sidebar, periodic status refresh, adding, removing and deleting projects |
-| `src/project-view.vala` | Per-project page: services, editor, logs, output, project actions |
+| `src/tray-controller.vala` | What the tray menu shows and does |
+| `src/window.vala` | Main window: sidebar, navigation, adding, removing and deleting projects |
+| `src/project-monitor.vala` | Periodic update of every project's state |
+| `src/project-view.vala` | Per-project page: tabs, project actions, removing services, resetting databases, output |
+| `src/services-page.vala` | Services tab: the project's state and a row per service |
+| `src/editor-page.vala` | Configuration tab: editing and validating the project's files |
+| `src/logs-page.vala` | Logs tab |
 | `src/docker.vala` | Async `docker` runner (collects output or streams it line by line) |
 | `src/project.vala`, `src/project-store.vala` | Project model and persistence |
 | `src/templates.vala` | Project templates and the PHP `Dockerfile` generator |

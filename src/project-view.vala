@@ -1,77 +1,4 @@
 namespace DockStation {
-    public enum EditorFileKind {
-        COMPOSE,
-        DOCKERFILE,
-    }
-
-    /* A file listed in the Configuration tab, relative to the project folder. */
-    public class EditorFile : Object {
-        public string path { get; construct; }
-        public EditorFileKind kind { get; construct; }
-
-        public EditorFile (string path, EditorFileKind kind) {
-            Object (path: path, kind: kind);
-        }
-
-        public string section_title {
-            owned get { return kind == EditorFileKind.COMPOSE ? _("Compose") : _("Dockerfiles"); }
-        }
-    }
-
-    /* Keeps the previous line's indentation, adding a level after lines that open a block ("key:"). */
-    public class YamlIndenter : Object, GtkSource.Indenter {
-        public bool is_trigger (GtkSource.View view, Gtk.TextIter location, Gdk.ModifierType state, uint keyval) {
-            if ((state & (Gdk.ModifierType.SHIFT_MASK | Gdk.ModifierType.CONTROL_MASK)) != 0) {
-                return false;
-            }
-            return keyval == Gdk.Key.Return || keyval == Gdk.Key.KP_Enter;
-        }
-
-        /* Called with `iter` at the start of the new line. */
-        public void indent (GtkSource.View view, ref Gtk.TextIter iter) {
-            var previous = iter;
-            if (!previous.backward_line ()) {
-                return;
-            }
-            var previous_end = previous;
-            if (!previous_end.ends_line ()) {
-                previous_end.forward_to_line_end ();
-            }
-            var line = previous.get_slice (previous_end);
-
-            var indent = new StringBuilder ();
-            for (int i = 0; i < line.length && (line[i] == ' ' || line[i] == '\t'); i++) {
-                indent.append_c (line[i]);
-            }
-            if (opens_block (line)) {
-                var width = view.indent_width > 0 ? view.indent_width : (int) view.tab_width;
-                indent.append (string.nfill (width, ' '));
-            }
-
-            // Replace the whitespace that followed the cursor, if any.
-            var buffer = view.buffer;
-            var whitespace_end = iter;
-            while (!whitespace_end.ends_line () && (whitespace_end.get_char () == ' ' || whitespace_end.get_char () == '\t')) {
-                whitespace_end.forward_char ();
-            }
-            buffer.delete (ref iter, ref whitespace_end);
-            buffer.insert (ref iter, indent.str, -1);
-        }
-
-        /* "key:" or a block scalar ("key: |", "key: >-"), ignoring trailing comments. */
-        private static bool opens_block (string line) {
-            var text = line.strip ();
-            if (text.has_prefix ("#")) {
-                return false;
-            }
-            var comment = text.index_of (" #");
-            if (comment >= 0) {
-                text = text.substring (0, comment).strip ();
-            }
-            return text.has_suffix (":") || Regex.match_simple ("""(^|:\s)[|>][-+]?$""", text);
-        }
-    }
-
     public class ProjectView : Adw.BreakpointBin {
         public Project project { get; construct; }
 
@@ -85,7 +12,6 @@ namespace DockStation {
 
         private Cancellable cancellable = new Cancellable ();
         private SimpleActionGroup actions;
-        private ulong status_handler = 0;
         private bool busy = false;
 
         private Adw.ViewStack stack;
@@ -93,52 +19,9 @@ namespace DockStation {
         private Adw.Spinner spinner;
         private Adw.Banner folder_banner;
 
-        // Services page
-        private Adw.ActionRow status_row;
-        private Adw.PreferencesGroup services_group;
-        private HashTable<string, ServiceRow> service_rows;
-        private string[] service_names = {};
-        // Services that can be removed; read from the files only when the configuration is reloaded.
-        private string[] removable_services = {};
-        private bool config_loaded = false;
-        private bool refreshing_services = false;
-        // Databases that can be reset, keyed by container ID; inspected again when the IDs change.
-        private HashTable<string, DatabaseInit> databases = new HashTable<string, DatabaseInit> (str_hash, str_equal);
-        // Traefik addresses per container ID, read from the containers' labels.
-        private HashTable<string, GenericArray<TraefikRoute>> traefik_routes =
-            new HashTable<string, GenericArray<TraefikRoute>> (str_hash, str_equal);
-        private string inspected_containers = "";
-        private bool config_reload_pending = false;
-
-        // Editor page
-        private GLib.ListStore file_store;
-        private Gtk.SortListModel file_list;
-        private Cancellable? dockerfile_search = null;
-        private Gtk.DropDown file_dropdown;
-        private GtkSource.Buffer editor_buffer;
-        private GtkSource.View editor_view;
-        private Adw.Banner editor_banner;
-        private uint current_file_index = 0;
-        private string? editing_path = null;
-        // Identifies the version on disk that was loaded, to detect changes made by other programs.
-        private string? editing_etag = null;
-        private bool loading_file = false;
-        private bool switching_file = false;
-        private bool dirty = false;
-        private bool saving = false;
-        // Bumped on every edit, so a save only clears `dirty` if nothing was typed meanwhile.
-        private uint edit_serial = 0;
-
-        // Logs page
-        private LogView logs_view;
-        private Gtk.StringList logs_services_model;
-        private Gtk.DropDown logs_service_dropdown;
-        private Gtk.ToggleButton timestamps_toggle;
-        private Cancellable? logs_cancellable = null;
-        private bool logs_started = false;
-        private bool updating_logs_model = false;
-
-        // Output page
+        private ServicesPage services;
+        private EditorPage editor;
+        private LogsPage logs;
         private LogView output_view;
 
         public ProjectView (Project project) {
@@ -146,47 +29,39 @@ namespace DockStation {
         }
 
         public bool has_unsaved_changes {
-            get { return dirty; }
+            get { return editor.has_unsaved_changes; }
         }
 
         public string editing_file_name {
-            owned get { return editing_path != null ? File.new_for_path (project.path).get_relative_path (File.new_for_path (editing_path)) ?? Path.get_basename (editing_path) : ""; }
+            owned get { return editor.editing_file_name; }
+        }
+
+        public async bool save_file () {
+            return yield editor.save_file ();
         }
 
         construct {
             width_request = 360;
             height_request = 300;
-            service_rows = new HashTable<string, ServiceRow> (str_hash, str_equal);
 
             setup_actions ();
             build_ui ();
 
-            status_handler = project.status_changed.connect (update_status_row);
-            update_status_row ();
-
-            reload_editor_files ();
+            editor.reload_files ();
             reload ();
         }
 
         /* Must be called before the view is discarded, to stop background processes. */
         public void shutdown () {
             cancellable.cancel ();
-            if (dockerfile_search != null) {
-                dockerfile_search.cancel ();
-            }
-            if (logs_cancellable != null) {
-                logs_cancellable.cancel ();
-            }
-            if (status_handler != 0) {
-                project.disconnect (status_handler);
-                status_handler = 0;
-            }
-            Adw.StyleManager.get_default ().notify["dark"].disconnect (update_editor_scheme);
+            services.shutdown ();
+            editor.shutdown ();
+            logs.stop ();
         }
 
         public void reload () {
             refresh_services.begin (true);
-            rescan_dockerfiles.begin ();
+            editor.rescan_dockerfiles.begin ();
         }
 
         /* ---------------------------------------------------------------- actions */
@@ -206,9 +81,6 @@ namespace DockStation {
             add_simple_action ("open-folder", open_folder);
             add_simple_action ("remove", () => remove_requested ());
             add_simple_action ("delete", () => delete_project.begin ());
-            add_simple_action ("save-file", () => save_file.begin ());
-            add_simple_action ("revert-file", () => load_file_at (current_file_index));
-            add_simple_action ("validate", () => validate.begin (false));
             add_simple_action ("add-service", () => show_add_service.begin ());
 
             insert_action_group ("project", actions);
@@ -216,7 +88,7 @@ namespace DockStation {
             var shortcuts = new Gtk.ShortcutController ();
             shortcuts.add_shortcut (new Gtk.Shortcut (
                 Gtk.ShortcutTrigger.parse_string ("<Control>s"),
-                new Gtk.NamedAction ("project.save-file")
+                new Gtk.NamedAction ("editor.save-file")
             ));
             add_controller (shortcuts);
         }
@@ -246,7 +118,7 @@ namespace DockStation {
             foreach (unowned string name in COMPOSE_ACTIONS) {
                 set_action_enabled (name, !value);
             }
-            service_rows.foreach ((name, row) => row.set_actions_sensitive (!value));
+            services.set_actions_sensitive (!value);
         }
 
         /* Returns true if the command ran and exited successfully. An empty `success_message` shows no toast. */
@@ -307,8 +179,8 @@ namespace DockStation {
 
             containers_changed ();
             yield refresh_services (false);
-            if (logs_started) {
-                restart_logs ();
+            if (logs.started) {
+                logs.restart ();
             }
             return success;
         }
@@ -384,9 +256,7 @@ namespace DockStation {
             }
 
             if (trash_folder) {
-                if (logs_cancellable != null) {
-                    logs_cancellable.cancel ();
-                }
+                logs.stop ();
                 try {
                     yield File.new_for_path (project.path).trash_async (Priority.DEFAULT, cancellable);
                 } catch (IOError.CANCELLED e) {
@@ -398,7 +268,7 @@ namespace DockStation {
             }
 
             // The files are gone (or intentionally kept): nothing left to save.
-            set_dirty (false);
+            editor.discard_changes ();
             deleted ();
         }
 
@@ -408,17 +278,17 @@ namespace DockStation {
                 return;
             }
             // Adding a service changes the compose file and .env on disk.
-            if (dirty && !(yield settle_unsaved_changes ())) {
+            if (editor.has_unsaved_changes && !(yield editor.settle_unsaved_changes ())) {
                 return;
             }
-            var dialog = new AddServiceDialog (project, service_names);
+            var dialog = new AddServiceDialog (project, services.service_names);
             dialog.added.connect ((service, start) => on_service_added.begin (service, start));
             dialog.present (this);
         }
 
         private async void on_service_added (string service, bool start) {
             toast (_("Added “%s”").printf (service));
-            reload_editor_files ();
+            editor.reload_files ();
             if (start) {
                 yield run_compose ({ "up", "--detach", service },
                                    _("Service “%s” started").printf (service),
@@ -452,14 +322,27 @@ namespace DockStation {
         /* --------------------------------------------------------------------- UI */
 
         private void build_ui () {
+            services = new ServicesPage (project);
+            services.reload_requested.connect (reload);
+            services.service_action.connect (on_service_action);
+            services.open_url.connect (open_browser);
+            services.services_changed.connect (() => logs.update_services (services.service_names));
+
+            editor = new EditorPage (project);
+            editor.toast.connect ((message) => toast (message));
+            editor.configuration_changed.connect (reload);
+            insert_action_group ("editor", editor.actions);
+
+            logs = new LogsPage (project);
+
             stack = new Adw.ViewStack () { vexpand = true };
-            stack.add_titled_with_icon (build_services_page (), "services", _("Services"), "view-grid-symbolic");
-            stack.add_titled_with_icon (build_editor_page (), "editor", _("Configuration"), "document-edit-symbolic");
-            stack.add_titled_with_icon (build_logs_page (), "logs", _("Logs"), "view-list-bullet-symbolic");
+            stack.add_titled_with_icon (services, "services", _("Services"), "view-grid-symbolic");
+            stack.add_titled_with_icon (editor, "editor", _("Configuration"), "document-edit-symbolic");
+            stack.add_titled_with_icon (logs, "logs", _("Logs"), "view-list-bullet-symbolic");
             output_stack_page = stack.add_titled_with_icon (build_output_page (), "output", _("Output"), "utilities-terminal-symbolic");
             stack.notify["visible-child-name"].connect (() => {
-                if (stack.visible_child_name == "logs" && !logs_started) {
-                    restart_logs ();
+                if (stack.visible_child_name == "logs" && !logs.started) {
+                    logs.restart ();
                 }
             });
 
@@ -537,207 +420,6 @@ namespace DockStation {
             add_breakpoint (narrow);
         }
 
-        private Gtk.Widget build_services_page () {
-            var folder_button = new Gtk.Button.from_icon_name ("folder-open-symbolic") {
-                action_name = "project.open-folder",
-                tooltip_text = _("Open Folder"),
-                valign = Gtk.Align.CENTER,
-            };
-            folder_button.add_css_class ("flat");
-
-            var location_row = new Adw.ActionRow () {
-                title = _("Location"),
-                subtitle = Utils.home_relative (project.path),
-                subtitle_selectable = true,
-            };
-            location_row.add_css_class ("property");
-            location_row.add_suffix (folder_button);
-
-            status_row = new Adw.ActionRow () { title = _("Status") };
-            status_row.add_css_class ("property");
-
-            var info_group = new Adw.PreferencesGroup () { title = project.name };
-            project.bind_property ("name", info_group, "title", BindingFlags.DEFAULT);
-            info_group.add (location_row);
-            info_group.add (status_row);
-
-            var refresh_button = new Gtk.Button.from_icon_name ("view-refresh-symbolic") {
-                tooltip_text = _("Refresh"),
-                valign = Gtk.Align.CENTER,
-            };
-            refresh_button.add_css_class ("flat");
-            refresh_button.clicked.connect (() => reload ());
-
-            var add_button = new Gtk.Button.from_icon_name ("list-add-symbolic") {
-                action_name = "project.add-service",
-                tooltip_text = _("Add Service…"),
-                valign = Gtk.Align.CENTER,
-            };
-            add_button.add_css_class ("flat");
-
-            var header_buttons = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
-            header_buttons.append (add_button);
-            header_buttons.append (refresh_button);
-
-            services_group = new Adw.PreferencesGroup () {
-                title = _("Services"),
-                header_suffix = header_buttons,
-            };
-
-            var page = new Adw.PreferencesPage ();
-            page.add (info_group);
-            page.add (services_group);
-            return page;
-        }
-
-        private Gtk.Widget build_editor_page () {
-            // The store is kept grouped by kind; the section sorter only marks where sections start.
-            file_store = new GLib.ListStore (typeof (EditorFile));
-            file_list = new Gtk.SortListModel (file_store, null) {
-                section_sorter = new Gtk.CustomSorter ((a, b) => {
-                    return (int) ((EditorFile) a).kind - (int) ((EditorFile) b).kind;
-                }),
-            };
-
-            var item_factory = new Gtk.SignalListItemFactory ();
-            item_factory.setup.connect ((obj) => {
-                ((Gtk.ListItem) obj).child = new Gtk.Label (null) {
-                    xalign = 0,
-                    ellipsize = Pango.EllipsizeMode.MIDDLE,
-                    max_width_chars = 36,
-                };
-            });
-            item_factory.bind.connect ((obj) => {
-                var item = (Gtk.ListItem) obj;
-                var label = (Gtk.Label) item.child;
-                label.label = ((EditorFile) item.item).path;
-                label.tooltip_text = label.label;
-            });
-
-            var header_factory = new Gtk.SignalListItemFactory ();
-            header_factory.setup.connect ((obj) => {
-                var label = new Gtk.Label (null) { xalign = 0 };
-                label.add_css_class ("heading");
-                ((Gtk.ListHeader) obj).child = label;
-            });
-            header_factory.bind.connect ((obj) => {
-                var header = (Gtk.ListHeader) obj;
-                ((Gtk.Label) header.child).label = ((EditorFile) header.item).section_title;
-            });
-
-            file_dropdown = new Gtk.DropDown (file_list, null) {
-                factory = item_factory,
-                header_factory = header_factory,
-                tooltip_text = _("File"),
-            };
-            file_dropdown.notify["selected"].connect (on_file_selected);
-
-            var validate_button = new Gtk.Button.with_label (_("Validate")) {
-                action_name = "project.validate",
-                tooltip_text = _("Check the Compose Configuration"),
-            };
-            var revert_button = new Gtk.Button.from_icon_name ("edit-undo-symbolic") {
-                action_name = "project.revert-file",
-                tooltip_text = _("Discard Changes"),
-            };
-            var save_button = new Gtk.Button.with_label (_("Save")) {
-                action_name = "project.save-file",
-                tooltip_text = _("Save (Ctrl+S)"),
-            };
-            save_button.add_css_class ("suggested-action");
-
-            var bar = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
-            bar.add_css_class ("toolbar");
-            bar.append (file_dropdown);
-            bar.append (new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0) { hexpand = true });
-            bar.append (validate_button);
-            bar.append (revert_button);
-            bar.append (save_button);
-
-            // Compose's messages are plain text, not markup.
-            editor_banner = new Adw.Banner ("") { use_markup = false };
-
-            editor_buffer = new GtkSource.Buffer (null);
-            editor_buffer.changed.connect (() => {
-                if (!loading_file) {
-                    edit_serial++;
-                    set_dirty (true);
-                }
-            });
-
-            update_editor_scheme ();
-            Adw.StyleManager.get_default ().notify["dark"].connect (update_editor_scheme);
-
-            editor_view = new GtkSource.View.with_buffer (editor_buffer) {
-                monospace = true,
-                top_margin = 12,
-                bottom_margin = 12,
-                left_margin = 6,
-                right_margin = 12,
-                show_line_numbers = true,
-                highlight_current_line = true,
-                auto_indent = true,
-                indent_on_tab = true,
-                smart_backspace = true,
-                // YAML forbids tabs.
-                insert_spaces_instead_of_tabs = true,
-            };
-            editor_buffer.highlight_matching_brackets = true;
-            // Make tabs visible: they break YAML and are easy to miss.
-            editor_view.space_drawer.set_types_for_locations (GtkSource.SpaceLocationFlags.ALL,
-                                                              GtkSource.SpaceTypeFlags.TAB);
-            editor_view.space_drawer.enable_matrix = true;
-
-            var toolbar = new Adw.ToolbarView () {
-                content = new Gtk.ScrolledWindow () { child = editor_view, vexpand = true },
-                top_bar_style = Adw.ToolbarStyle.RAISED_BORDER,
-            };
-            toolbar.add_top_bar (bar);
-            toolbar.add_top_bar (editor_banner);
-
-            set_dirty (false);
-            return toolbar;
-        }
-
-        private Gtk.Widget build_logs_page () {
-            logs_services_model = new Gtk.StringList ({ _("All Services") });
-            logs_service_dropdown = new Gtk.DropDown (logs_services_model, null) { tooltip_text = _("Service") };
-            logs_service_dropdown.notify["selected"].connect (() => {
-                if (!updating_logs_model) {
-                    restart_logs ();
-                }
-            });
-
-            timestamps_toggle = new Gtk.ToggleButton () {
-                icon_name = "preferences-system-time-symbolic",
-                tooltip_text = _("Show Timestamps"),
-            };
-            timestamps_toggle.toggled.connect (restart_logs);
-
-            var reload_button = new Gtk.Button.from_icon_name ("view-refresh-symbolic") { tooltip_text = _("Reload Logs") };
-            reload_button.clicked.connect (restart_logs);
-
-            logs_view = new LogView ();
-
-            var clear_button = new Gtk.Button.from_icon_name ("edit-clear-all-symbolic") { tooltip_text = _("Clear") };
-            clear_button.clicked.connect (() => logs_view.clear ());
-
-            var bar = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
-            bar.add_css_class ("toolbar");
-            bar.append (logs_service_dropdown);
-            bar.append (new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0) { hexpand = true });
-            bar.append (timestamps_toggle);
-            bar.append (reload_button);
-            bar.append (clear_button);
-
-            var toolbar = new Adw.ToolbarView () {
-                content = logs_view,
-                top_bar_style = Adw.ToolbarStyle.RAISED_BORDER,
-            };
-            toolbar.add_top_bar (bar);
-            return toolbar;
-        }
-
         private Gtk.Widget build_output_page () {
             output_view = new LogView ();
 
@@ -765,143 +447,12 @@ namespace DockStation {
             return toolbar;
         }
 
-        /* --------------------------------------------------------------- services */
+        /* ---------------------------------------------------------------- services */
 
-        private void update_status_row () {
-            status_row.subtitle = project.status_label;
-        }
-
-        /*
-         * Updates the services list. `containers` is the window's `docker ps` output for all
-         * projects, which saves running it again; without it, this project's are queried.
-         */
+        /* See ServicesPage.refresh (). */
         public async void refresh_services (bool reload_config = false, GenericArray<ComposeContainer>? containers = null) {
-            if (refreshing_services) {
-                config_reload_pending = config_reload_pending || reload_config;
-                return;
-            }
-            refreshing_services = true;
             folder_banner.revealed = !project.folder_exists;
-
-            try {
-                if (!project.folder_exists) {
-                    // No files to read: the services are just the containers that are left.
-                    config_loaded = false;
-                    service_names = {};
-                    removable_services = {};
-                    services_group.description = null;
-                    update_logs_services ();
-                } else if (reload_config || !config_loaded) {
-                    var config = yield Docker.run (project.path, Docker.compose_args ({ "config", "--services" }), cancellable);
-                    config_loaded = true;
-                    removable_services = ServiceRemover.added_services (project);
-                    if (config.success) {
-                        service_names = Utils.split_lines (config.stdout_text);
-                        services_group.description = null;
-                    } else {
-                        service_names = {};
-                        services_group.description = config.stderr_text.strip ();
-                    }
-                    update_logs_services ();
-                }
-
-                var infos = new HashTable<string, ServiceInfo> (str_hash, str_equal);
-                string[] order = {};
-                foreach (unowned string name in service_names) {
-                    infos[name] = new ServiceInfo ();
-                    order += name;
-                }
-
-                if (containers == null) {
-                    var ps = yield Docker.run (null, {
-                        "ps", "--all",
-                        "--filter", "label=com.docker.compose.project.working_dir=" + project.path,
-                        "--format", Docker.COMPOSE_PS_FORMAT,
-                    }, cancellable);
-                    containers = ps.success ? ComposeContainer.parse (ps.stdout_text) : new GenericArray<ComposeContainer> ();
-                }
-                foreach (var container in containers) {
-                    if (container.working_dir != project.path) {
-                        continue;
-                    }
-                    var info = infos[container.service];
-                    if (info == null) {
-                        // Orphan container of a service no longer in the file.
-                        info = new ServiceInfo ();
-                        infos[container.service] = info;
-                        order += container.service;
-                    }
-                    info.add_container (container.id, container.state, container.status, container.ports);
-                }
-
-                yield inspect_containers (infos, order);
-                update_service_rows (infos, order);
-            } catch (IOError.CANCELLED e) {
-                return;
-            } catch (Error e) {
-                services_group.description = e.message;
-            }
-
-            refreshing_services = false;
-            if (config_reload_pending) {
-                config_reload_pending = false;
-                yield refresh_services (true);
-            }
-        }
-
-        /*
-         * Reads what DockStation needs from the containers themselves: databases
-         * with init scripts (see DatabaseInit) and Traefik routes (see Traefik).
-         */
-        private async void inspect_containers (HashTable<string, ServiceInfo> infos, string[] order) {
-            string[] ids = {};
-            foreach (unowned string name in order) {
-                var info = infos[name];
-                if (info.containers == 1 && info.container_id != "") {
-                    ids += info.container_id;
-                }
-            }
-            var key = string.joinv (",", ids);
-            if (key == inspected_containers) {
-                return;
-            }
-            try {
-                databases = yield DatabaseInit.inspect (ids, cancellable);
-                traefik_routes = yield Traefik.inspect (ids, cancellable);
-                inspected_containers = key;
-            } catch (Error e) {
-                // Not critical: the reset and link buttons just stay hidden.
-            }
-        }
-
-        private void update_service_rows (HashTable<string, ServiceInfo> infos, string[] order) {
-            foreach (var name in service_rows.get_keys ()) {
-                if (!infos.contains (name)) {
-                    services_group.remove (service_rows[name]);
-                    service_rows.remove (name);
-                }
-            }
-
-            foreach (unowned string name in order) {
-                var row = service_rows[name];
-                if (row == null) {
-                    row = new ServiceRow (name);
-                    row.action_requested.connect (on_service_action);
-                    row.open_url.connect (open_browser);
-                    row.set_actions_sensitive (!busy);
-                    services_group.add (row);
-                    service_rows[name] = row;
-                }
-                var info = infos[name];
-                row.show_traefik_routes (info.container_id != "" ? traefik_routes[info.container_id] : null);
-                row.update (info);
-                row.show_database_reset (info.containers == 1 ? databases[info.container_id] : null);
-                row.show_remove (name in removable_services);
-            }
-
-            if (order.length == 0 && services_group.description == null) {
-                services_group.description = _("No services defined");
-            }
+            yield services.refresh (reload_config, containers);
         }
 
         private void on_service_action (ServiceRow row, string action) {
@@ -943,7 +494,7 @@ namespace DockStation {
                 return;
             }
             // Removing a service changes the compose file and .env on disk.
-            if (dirty && !(yield settle_unsaved_changes ())) {
+            if (editor.has_unsaved_changes && !(yield editor.settle_unsaved_changes ())) {
                 return;
             }
 
@@ -996,7 +547,7 @@ namespace DockStation {
                 return;
             }
             toast (_("Removed “%s”").printf (service));
-            reload_editor_files ();
+            editor.reload_files ();
             reload ();
         }
 
@@ -1109,384 +660,9 @@ namespace DockStation {
             }
         }
 
-        /* ------------------------------------------------------------------- logs */
-
-        private void update_logs_services () {
-            string? selected = null;
-            if (logs_service_dropdown.selected > 0 && logs_service_dropdown.selected != Gtk.INVALID_LIST_POSITION) {
-                selected = logs_services_model.get_string (logs_service_dropdown.selected);
-            }
-
-            updating_logs_model = true;
-            logs_services_model.splice (1, logs_services_model.get_n_items () - 1, service_names);
-            uint position = 0;
-            for (int i = 0; i < service_names.length; i++) {
-                if (service_names[i] == selected) {
-                    position = i + 1;
-                }
-            }
-            logs_service_dropdown.selected = position;
-            updating_logs_model = false;
-        }
-
         private void show_logs_for (string service) {
-            uint position = 0;
-            for (uint i = 1; i < logs_services_model.get_n_items (); i++) {
-                if (logs_services_model.get_string (i) == service) {
-                    position = i;
-                }
-            }
-            updating_logs_model = true;
-            logs_service_dropdown.selected = position;
-            updating_logs_model = false;
-
-            logs_started = true;
+            logs.show_service (service);
             stack.visible_child_name = "logs";
-            restart_logs ();
-        }
-
-        private void restart_logs () {
-            if (logs_cancellable != null) {
-                logs_cancellable.cancel ();
-            }
-            logs_started = true;
-            logs_view.clear ();
-
-            var stream_cancellable = new Cancellable ();
-            logs_cancellable = stream_cancellable;
-
-            string[] args = { "logs", "--follow", "--no-color", "--tail", "500" };
-            if (timestamps_toggle.active) {
-                args += "--timestamps";
-            }
-            var selected = logs_service_dropdown.selected;
-            if (selected > 0 && selected != Gtk.INVALID_LIST_POSITION) {
-                args += logs_services_model.get_string (selected);
-            }
-
-            Docker.stream.begin (project.path, Docker.compose_args (args), (line) => {
-                if (!stream_cancellable.is_cancelled ()) {
-                    logs_view.append (line + "\n");
-                }
-            }, stream_cancellable, (obj, res) => {
-                try {
-                    Docker.stream.end (res);
-                    if (!stream_cancellable.is_cancelled ()) {
-                        logs_view.append ("— %s —\n".printf (_("Log stream ended")));
-                    }
-                } catch (IOError.CANCELLED e) {
-                } catch (Error e) {
-                    logs_view.append (e.message + "\n");
-                }
-            });
-        }
-
-        /* ----------------------------------------------------------------- editor */
-
-        private EditorFile file_at (uint position) {
-            return (EditorFile) file_list.get_item (position);
-        }
-
-        private uint position_of (string? path) {
-            for (uint i = 0; path != null && i < file_list.get_n_items (); i++) {
-                if (file_at (i).path == path) {
-                    return i;
-                }
-            }
-            return Gtk.INVALID_LIST_POSITION;
-        }
-
-        private void reload_editor_files () {
-            Object[] files = {};
-            foreach (unowned string path in project.editable_files ()) {
-                files += new EditorFile (path, EditorFileKind.COMPOSE);
-            }
-            switching_file = true;
-            file_store.splice (0, file_store.get_n_items (), files);
-            file_dropdown.selected = 0;
-            switching_file = false;
-            load_file_at (0);
-            rescan_dockerfiles.begin ();
-        }
-
-        /* Searches the project for Dockerfiles and lists them in their own section. */
-        private async void rescan_dockerfiles () {
-            if (dockerfile_search != null) {
-                dockerfile_search.cancel ();
-            }
-            var search = new Cancellable ();
-            dockerfile_search = search;
-
-            var dockerfiles = yield project.find_dockerfiles (search);
-            if (search.is_cancelled ()) {
-                return;
-            }
-
-            uint first = 0;
-            while (first < file_store.get_n_items ()
-                   && ((EditorFile) file_store.get_item (first)).kind == EditorFileKind.COMPOSE) {
-                first++;
-            }
-
-            // Keep a Dockerfile that is open in the editor, even if it was moved or deleted.
-            var editing = editing_file_name;
-            string[] paths = dockerfiles;
-            uint editing_position = position_of (editing);
-            if (editing_position != Gtk.INVALID_LIST_POSITION
-                && file_at (editing_position).kind == EditorFileKind.DOCKERFILE
-                && !(editing in paths)) {
-                paths += editing;
-            }
-
-            string[] current = {};
-            for (uint i = first; i < file_store.get_n_items (); i++) {
-                current += ((EditorFile) file_store.get_item (i)).path;
-            }
-            if (string.joinv ("\n", current) == string.joinv ("\n", paths)) {
-                return;
-            }
-
-            Object[] items = {};
-            foreach (unowned string path in paths) {
-                items += new EditorFile (path, EditorFileKind.DOCKERFILE);
-            }
-            switching_file = true;
-            file_store.splice (first, file_store.get_n_items () - first, items);
-            var position = position_of (editing);
-            if (position != Gtk.INVALID_LIST_POSITION) {
-                current_file_index = position;
-                file_dropdown.selected = position;
-            }
-            switching_file = false;
-        }
-
-        private void set_dirty (bool value) {
-            dirty = value;
-            set_action_enabled ("save-file", value);
-            set_action_enabled ("revert-file", value);
-        }
-
-        private void load_file_at (uint index) {
-            current_file_index = index;
-            var file = file_at (index);
-            editing_path = Path.build_filename (project.path, file.path);
-            configure_editor_for (file);
-
-            uint8[] contents = {};
-            editing_etag = null;
-            try {
-                File.new_for_path (editing_path).load_contents (null, out contents, out editing_etag);
-            } catch (IOError.NOT_FOUND e) {
-                // Not created yet (e.g. .env): saving creates it.
-            } catch (Error e) {
-                toast (e.message);
-            }
-
-            loading_file = true;
-            editor_buffer.begin_irreversible_action ();
-            editor_buffer.text = contents.length > 0 ? (string) contents : "";
-            editor_buffer.end_irreversible_action ();
-            loading_file = false;
-
-            Gtk.TextIter start;
-            editor_buffer.get_start_iter (out start);
-            editor_buffer.place_cursor (start);
-
-            editor_banner.revealed = false;
-            set_dirty (false);
-        }
-
-        /* Highlighting and indentation rules depend on the kind of file. */
-        private void configure_editor_for (EditorFile file) {
-            string language_id;
-            if (file.kind == EditorFileKind.DOCKERFILE) {
-                language_id = "docker";
-            } else if (Path.get_basename (file.path) == ".env") {
-                language_id = "sh";
-            } else {
-                language_id = "yaml";
-            }
-            editor_buffer.language = GtkSource.LanguageManager.get_default ().get_language (language_id);
-
-            bool yaml = language_id == "yaml";
-            editor_view.tab_width = yaml ? 2 : 4;
-            editor_view.indenter = yaml ? new YamlIndenter () : null;
-        }
-
-        private void update_editor_scheme () {
-            var scheme_id = Adw.StyleManager.get_default ().dark ? "Adwaita-dark" : "Adwaita";
-            editor_buffer.style_scheme = GtkSource.StyleSchemeManager.get_default ().get_scheme (scheme_id);
-        }
-
-        private void on_file_selected () {
-            if (switching_file || file_dropdown.selected == current_file_index) {
-                return;
-            }
-            if (!dirty) {
-                load_file_at (file_dropdown.selected);
-                return;
-            }
-            var target = file_dropdown.selected;
-            ask_save_before_switch.begin (target);
-        }
-
-        private async void ask_save_before_switch (uint target) {
-            if (!(yield settle_unsaved_changes ())) {
-                switching_file = true;
-                file_dropdown.selected = current_file_index;
-                switching_file = false;
-                return;
-            }
-            load_file_at (target);
-        }
-
-        /*
-         * Asks whether to save or discard the editor's changes. Returns false if the
-         * user cancelled or the file could not be saved; the changes are then kept.
-         */
-        private async bool settle_unsaved_changes () {
-            var dialog = new Adw.AlertDialog (
-                _("Save Changes?"),
-                _("“%s” has unsaved changes.").printf (editing_file_name)
-            );
-            dialog.add_response ("cancel", _("_Cancel"));
-            dialog.add_response ("discard", _("_Discard"));
-            dialog.add_response ("save", _("_Save"));
-            dialog.set_response_appearance ("discard", Adw.ResponseAppearance.DESTRUCTIVE);
-            dialog.set_response_appearance ("save", Adw.ResponseAppearance.SUGGESTED);
-            dialog.default_response = "save";
-            dialog.close_response = "cancel";
-
-            var response = yield dialog.choose (this, null);
-            if (response == "save") {
-                return yield save_file ();
-            }
-            if (response == "discard") {
-                load_file_at (current_file_index);
-                return true;
-            }
-            return false;
-        }
-
-        /* Returns true if the editor holds no unsaved changes afterwards. */
-        public async bool save_file () {
-            if (editing_path == null || !dirty) {
-                return !dirty;
-            }
-            if (saving) {
-                return false;
-            }
-            saving = true;
-            var saved = yield write_editor_file ();
-            saving = false;
-            return saved;
-        }
-
-        private async bool write_editor_file () {
-            var path = editing_path;
-            var name = editing_file_name;
-            var kind = file_at (current_file_index).kind;
-            var serial = edit_serial;
-            Gtk.TextIter start, end;
-            editor_buffer.get_bounds (out start, out end);
-            var contents = new Bytes (editor_buffer.get_text (start, end, true).data);
-            var etag = editing_etag;
-
-            while (true) {
-                try {
-                    string? new_etag;
-                    // replace_contents keeps the permissions of an existing file (e.g. a 0600 .env).
-                    // With an etag it fails instead of overwriting changes made by another program.
-                    yield File.new_for_path (path).replace_contents_bytes_async (
-                        contents, etag, false, FileCreateFlags.NONE, null, out new_etag);
-                    if (editing_path == path) {
-                        editing_etag = new_etag;
-                    }
-                    break;
-                } catch (IOError.WRONG_ETAG e) {
-                    var response = yield ask_overwrite_changed_file (name);
-                    if (response == "overwrite") {
-                        etag = null;
-                        continue;
-                    }
-                    if (response == "reload" && editing_path == path) {
-                        load_file_at (current_file_index);
-                    }
-                    return !dirty;
-                } catch (Error e) {
-                    toast (_("Could not save: %s").printf (e.message));
-                    return false;
-                }
-            }
-
-            // Keep the file marked as modified if it was edited while saving.
-            if (editing_path == path && edit_serial == serial) {
-                set_dirty (false);
-            }
-            toast (_("Saved “%s”").printf (name));
-
-            // Only compose files and .env affect `docker compose config`.
-            if (kind == EditorFileKind.COMPOSE) {
-                validate.begin (true);
-            }
-            return !dirty;
-        }
-
-        private async string ask_overwrite_changed_file (string name) {
-            var dialog = new Adw.AlertDialog (
-                _("File Changed on Disk"),
-                _("“%s” was modified by another program after it was opened. Overwrite it with your version, or reload it and discard your changes?").printf (name)
-            );
-            dialog.add_response ("cancel", _("_Cancel"));
-            dialog.add_response ("reload", _("_Reload"));
-            dialog.add_response ("overwrite", _("_Overwrite"));
-            dialog.set_response_appearance ("reload", Adw.ResponseAppearance.DESTRUCTIVE);
-            dialog.set_response_appearance ("overwrite", Adw.ResponseAppearance.DESTRUCTIVE);
-            dialog.default_response = "cancel";
-            dialog.close_response = "cancel";
-            return yield dialog.choose (this, null);
-        }
-
-        private async void validate (bool after_save) {
-            var overlay = new ComposeOverlay (project.compose_files ());
-            try {
-                // Check the text in the editor, not the file on disk: Compose gets a copy of it instead.
-                if (dirty && file_at (current_file_index).kind == EditorFileKind.COMPOSE) {
-                    overlay_editor_text (overlay);
-                }
-
-                var result = yield Docker.run (project.path, overlay.compose_args ({ "config", "--quiet" }), cancellable);
-                if (result.success) {
-                    editor_banner.revealed = false;
-                    if (!after_save) {
-                        toast (_("The configuration is valid"));
-                    }
-                    // The services list reflects the files on disk.
-                    if (!overlay.has_copies) {
-                        reload ();
-                    }
-                } else {
-                    editor_banner.title = overlay.restore_paths (result.stderr_text.strip ());
-                    editor_banner.revealed = true;
-                }
-            } catch (IOError.CANCELLED e) {
-            } catch (Error e) {
-                toast (e.message);
-            } finally {
-                overlay.remove ();
-            }
-        }
-
-        /* Does nothing when Compose does not load the edited file at all. */
-        private void overlay_editor_text (ComposeOverlay overlay) throws Error {
-            Gtk.TextIter start, end;
-            editor_buffer.get_bounds (out start, out end);
-            var text = editor_buffer.get_text (start, end, true);
-            if (Path.get_basename (editing_path) == ".env") {
-                overlay.replace_env (editing_path, text);
-            } else if (overlay.loads (editing_path)) {
-                overlay.replace_file (editing_path, text);
-            }
         }
     }
 }

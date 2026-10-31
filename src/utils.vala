@@ -1,6 +1,33 @@
 namespace DockStation.Utils {
     private const string[] STATE_CLASSES = { "success", "warning", "error", "dim-label" };
 
+    private bool? sandboxed = null;
+
+    public bool in_flatpak () {
+        if (sandboxed == null) {
+            sandboxed = FileUtils.test ("/.flatpak-info", FileTest.EXISTS);
+        }
+        return sandboxed;
+    }
+
+    public string[] to_array (GenericArray<string> items) {
+        string[] result = {};
+        foreach (unowned string item in items) {
+            result += item;
+        }
+        return result;
+    }
+
+    /* A small button with just an icon, for the end of a row. */
+    public Gtk.Button flat_icon_button (string icon, string tooltip) {
+        var button = new Gtk.Button.from_icon_name (icon) {
+            tooltip_text = tooltip,
+            valign = Gtk.Align.CENTER,
+        };
+        button.add_css_class ("flat");
+        return button;
+    }
+
     /* Applies exactly one of the libadwaita state style classes to a widget. */
     public void set_state_class (Gtk.Widget widget, string css_class) {
         foreach (unowned string c in STATE_CLASSES) {
@@ -181,17 +208,30 @@ namespace DockStation.Utils {
         return builder.str;
     }
 
+    /* Splits a line of a .env file. Returns false if it defines nothing, such as a comment. */
+    public bool parse_env_line (string text, out string key, out string value) {
+        key = "";
+        value = "";
+        var line = text.strip ();
+        if (line.has_prefix ("export ")) {
+            line = line.substring (7).strip ();
+        }
+        var equals = line.index_of ("=");
+        if (line.has_prefix ("#") || equals <= 0) {
+            return false;
+        }
+        key = line.substring (0, equals).strip ();
+        value = line.substring (equals + 1).strip ();
+        return true;
+    }
+
     /* Names of the variables defined in the text of a .env file. */
     public string[] env_keys (string text) {
         string[] keys = {};
-        foreach (unowned string raw in text.split ("\n")) {
-            var line = raw.strip ();
-            if (line.has_prefix ("export ")) {
-                line = line.substring (7).strip ();
-            }
-            var equals = line.index_of ("=");
-            if (!line.has_prefix ("#") && equals > 0) {
-                keys += line.substring (0, equals).strip ();
+        foreach (unowned string line in text.split ("\n")) {
+            string key, value;
+            if (parse_env_line (line, out key, out value)) {
+                keys += key;
             }
         }
         return keys;

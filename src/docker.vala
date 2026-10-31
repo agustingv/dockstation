@@ -11,7 +11,7 @@ namespace DockStation {
 
     public delegate void LineFunc (string line);
 
-    /* One line of `docker ps --format Docker.COMPOSE_PS_FORMAT`. */
+    /* One line of `docker ps --format COMPOSE_PS_FORMAT`. */
     public class ComposeContainer {
         public string working_dir;
         public string service;
@@ -49,19 +49,10 @@ namespace DockStation {
      * Flatpak, commands are forwarded to the host with flatpak-spawn.
      */
     public class Docker : Object {
-        private static bool? sandboxed = null;
-
-        private static bool in_flatpak () {
-            if (sandboxed == null) {
-                sandboxed = FileUtils.test ("/.flatpak-info", FileTest.EXISTS);
-            }
-            return sandboxed;
-        }
-
         private static Subprocess spawn (string? cwd, string[] args, SubprocessFlags flags) throws Error {
             var launcher = new SubprocessLauncher (flags);
             string[] argv = {};
-            if (in_flatpak ()) {
+            if (Utils.in_flatpak ()) {
                 argv += "flatpak-spawn";
                 argv += "--host";
                 if (cwd != null) {
@@ -82,9 +73,24 @@ namespace DockStation {
          * Plain `docker ps` gives the same data as `docker compose ps` at a fraction of the
          * cost, because Compose parses the project's files on every run.
          */
-        public const string COMPOSE_PS_FORMAT =
+        private const string COMPOSE_PS_FORMAT =
             "{{.Label \"com.docker.compose.project.working_dir\"}}\t{{.Label \"com.docker.compose.service\"}}\t"
             + "{{.Label \"com.docker.compose.oneoff\"}}\t{{.State}}\t{{.Status}}\t{{.Ports}}\t{{.ID}}";
+
+        /*
+         * The Compose containers of the project in `working_dir`, or of every project if it
+         * is null. Fails with IOError.FAILED, and Docker's message, if Docker reports an error.
+         */
+        public static async GenericArray<ComposeContainer> compose_containers (string? working_dir,
+                                                                                Cancellable? cancellable = null) throws Error {
+            var label = "label=com.docker.compose.project";
+            var filter = working_dir != null ? label + ".working_dir=" + working_dir : label;
+            var result = yield run (null, { "ps", "--all", "--filter", filter, "--format", COMPOSE_PS_FORMAT }, cancellable);
+            if (!result.success) {
+                throw new IOError.FAILED (result.stderr_text.strip ());
+            }
+            return ComposeContainer.parse (result.stdout_text);
+        }
 
         /* Arguments for a `docker compose` command, with plain output that is easy to show. */
         public static string[] compose_args (string[] args) {

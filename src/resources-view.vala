@@ -300,11 +300,7 @@ namespace DockStation {
 
                 if (bucket.project != null) {
                     var project = bucket.project;
-                    var open_button = new Gtk.Button.from_icon_name ("go-next-symbolic") {
-                        tooltip_text = _("Open Project"),
-                        valign = Gtk.Align.CENTER,
-                    };
-                    open_button.add_css_class ("flat");
+                    var open_button = Utils.flat_icon_button ("go-next-symbolic", _("Open Project"));
                     open_button.clicked.connect (() => open_project (project));
                     group.header_suffix = open_button;
                 }
@@ -351,12 +347,7 @@ namespace DockStation {
         }
 
         private static Gtk.Button trash_button (string tooltip) {
-            var button = new Gtk.Button.from_icon_name ("user-trash-symbolic") {
-                tooltip_text = tooltip,
-                valign = Gtk.Align.CENTER,
-            };
-            button.add_css_class ("flat");
-            return button;
+            return Utils.flat_icon_button ("user-trash-symbolic", tooltip);
         }
 
         private static Gtk.Button cleanup_button (string label) {

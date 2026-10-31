@@ -106,6 +106,29 @@ private void env_tests () {
     Test.add_func ("/env/remove-block-keeps-other-variables", () => {
         eq (ServiceRemover.remove_env_block ("# db\nDB_PORT=1\nOTHER=2\n", "db"), "OTHER=2\n");
     });
+    Test.add_func ("/env/parse-line", () => {
+        string key, value;
+        assert (Utils.parse_env_line ("  export A_B = some value  ", out key, out value));
+        eq (key, "A_B");
+        eq (value, "some value");
+        assert (Utils.parse_env_line ("EMPTY=", out key, out value));
+        eq (value, "");
+        assert (!Utils.parse_env_line ("# A=1", out key, out value));
+        assert (!Utils.parse_env_line ("=1", out key, out value));
+        assert (!Utils.parse_env_line ("", out key, out value));
+    });
+    Test.add_func ("/env/compose-files", () => {
+        try {
+            var dir = temp_project ();
+            var env = Path.build_filename (dir, ".env");
+            FileUtils.set_contents (env, "# COMPOSE_FILE=ignored.yaml\nexport COMPOSE_PATH_SEPARATOR=;\nCOMPOSE_FILE=\"a.yaml;/abs/b.yaml\"\n");
+            eq_list (new Project ("p", dir).compose_files (), { dir + "/a.yaml", "/abs/b.yaml" });
+            FileUtils.unlink (env);
+            DirUtils.remove (dir);
+        } catch (Error e) {
+            error (e.message);
+        }
+    });
     Test.add_func ("/env/keys", () => {
         eq_list (Utils.env_keys ("# comment\nA=1\nexport B=2\n\nNOT_A_VARIABLE\n =x\nC = 3\n"), { "A", "B", "C" });
     });
@@ -176,6 +199,13 @@ private void utils_tests () {
         eq (Utils.simplify_ports ("80/tcp"), "");
         eq_int (Utils.first_host_port ("80/tcp"), 0);
     });
+    Test.add_func ("/utils/to-array", () => {
+        var items = new GenericArray<string> ();
+        eq_int (Utils.to_array (items).length, 0);
+        items.add ("a");
+        items.add ("b");
+        eq_list (Utils.to_array (items), { "a", "b" });
+    });
     Test.add_func ("/utils/first-line", () => {
         eq (Utils.first_line ("\n  first  \nsecond\n"), "first");
         assert (Utils.first_line (" \n ") == null);
@@ -230,6 +260,70 @@ private string temp_project () {
     } catch (Error e) {
         error (e.message);
     }
+}
+
+private void inspect_tests () {
+    Test.add_func ("/inspect/parse", () => {
+        var containers = ContainerDetails.parse (
+            "C\tabc123\tsha256:img\n"
+            + "M\tvolume\tdb-data\t/var/lib/docker/x\t/var/lib/mysql\n"
+            + "M\tbind\t<no value>\t/host/init\t/docker-entrypoint-initdb.d\n"
+            + "E\tPGDATA=/data=1\n"
+            + "E\tNOT_A_VARIABLE\n"
+            + "L\ttraefik.http.routers.a.rule\tHost(`a`)\twith tab\n"
+            + "C\tdef456\tsha256:other\n"
+            + "stray line\n");
+        eq_int (containers.length, 2);
+        var first = containers[0];
+        eq (first.id, "abc123");
+        eq (first.image_id, "sha256:img");
+        eq_int (first.mounts.length, 2);
+        eq (first.mounts[0].name, "db-data");
+        eq (first.mounts[1].name, "");
+        eq (first.mounts[1].destination, "/docker-entrypoint-initdb.d");
+        eq (first.environment["PGDATA"], "/data=1");
+        eq_int (first.environment.size (), 1);
+        eq (first.labels["traefik.http.routers.a.rule"], "Host(`a`)\twith tab");
+        eq (containers[1].id, "def456");
+        eq_int (containers[1].mounts.length, 0);
+    });
+    Test.add_func ("/inspect/database", () => {
+        try {
+            var dir = temp_project ();
+            var script = Path.build_filename (dir, "01.sql");
+            var other = Path.build_filename (dir, "notes.txt");
+            FileUtils.set_contents (script, "");
+            FileUtils.set_contents (other, "");
+
+            var output = "C\tabc\timg\nM\tvolume\tdata\t/x\t/var/lib/postgresql/data\nM\tbind\t<no value>\t%s\t/docker-entrypoint-initdb.d\n".printf (dir);
+            var database = DatabaseInit.from_container (ContainerDetails.parse (output)[0]);
+            assert (database != null);
+            eq (database.engine, "PostgreSQL");
+            eq (database.image_id, "img");
+            eq (database.data_type, "volume");
+            eq (database.data_volume, "data");
+            eq_list (database.init_files, { script });
+
+            // Custom data folder, named by PGDATA.
+            output = "C\tabc\timg\nM\tbind\t<no value>\t/host\t/pg\nM\tvolume\tinit\t/y\t/docker-entrypoint-initdb.d\nE\tPGDATA=/pg\n";
+            database = DatabaseInit.from_container (ContainerDetails.parse (output)[0]);
+            assert (database != null);
+            eq (database.data_source, "/host");
+            eq_list (database.init_volumes, { "init" });
+
+            // No init scripts, or no data folder: nothing to reset.
+            output = "C\tabc\timg\nM\tvolume\tdata\t/x\t/var/lib/mysql\n";
+            assert (DatabaseInit.from_container (ContainerDetails.parse (output)[0]) == null);
+            output = "C\tabc\timg\nM\tvolume\tinit\t/y\t/docker-entrypoint-initdb.d\n";
+            assert (DatabaseInit.from_container (ContainerDetails.parse (output)[0]) == null);
+
+            FileUtils.unlink (script);
+            FileUtils.unlink (other);
+            DirUtils.remove (dir);
+        } catch (Error e) {
+            error (e.message);
+        }
+    });
 }
 
 private void overlay_tests () {
@@ -334,6 +428,28 @@ private void service_template_tests () {
             assert (e.message.contains ("MISSING"));
         }
     });
+    // A placeholder nobody fills in is an error, which would stop the project from being created.
+    Test.add_func ("/templates/project-templates-write", () => {
+        var vars = table ({
+            "NAME", "My App", "NAME_HTML", "My App", "SLUG", "my-app", "PORT", "8080", "PASSWORD", "secret",
+            "UID", "1000", "GID", "1000", "PHP_VERSION", "8.4", "COMPOSER_INSTALL", "",
+        });
+        var templates = Templates.all ();
+        assert (templates.length > 0);
+        foreach (var template in templates) {
+            try {
+                var dir = temp_project ();
+                template.write_to (File.new_for_path (dir), vars);
+                var compose = Path.build_filename (dir, "compose.yaml");
+                string text;
+                FileUtils.get_contents (compose, out text);
+                assert (!text.contains ("{{"));
+                Process.spawn_command_line_sync ("rm -rf " + Shell.quote (dir));
+            } catch (Error e) {
+                error ("%s: %s", template.name, e.message);
+            }
+        }
+    });
     // Mistakes in a built-in service would otherwise only show up when a user adds it.
     Test.add_func ("/templates/built-in-services-render", () => {
         string[] problems;
@@ -374,6 +490,7 @@ int main (string[] args) {
     traefik_tests ();
     utils_tests ();
     docker_tests ();
+    inspect_tests ();
     overlay_tests ();
     added_services_tests ();
     service_template_tests ();

@@ -11,10 +11,6 @@ namespace DockStation {
         private Xdp.Portal portal = new Xdp.Portal ();
         private string? last_status = null;
 
-        private static bool sandboxed () {
-            return FileUtils.test ("/.flatpak-info", FileTest.EXISTS);
-        }
-
         /* Asks to keep running in the background. Returns false if the user refused. */
         public async bool request (Gtk.Window window) {
             try {
@@ -27,7 +23,7 @@ namespace DockStation {
             } catch (Error e) {
                 // Apps outside a sandbox need no permission; without the portal there is nobody to ask.
                 debug ("Background request failed: %s", e.message);
-                return !sandboxed ();
+                return !Utils.in_flatpak ();
             }
         }
 

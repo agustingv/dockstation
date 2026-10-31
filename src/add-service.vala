@@ -318,19 +318,9 @@ namespace DockStation {
             title = _("Add Service");
             content_width = 520;
 
-            var cancel_button = new Gtk.Button.with_mnemonic (_("_Cancel"));
-            cancel_button.clicked.connect (() => close ());
-
             add_button = new Gtk.Button.with_mnemonic (_("_Add"));
-            add_button.add_css_class ("suggested-action");
             add_button.clicked.connect (() => add.begin ());
-
-            var header = new Adw.HeaderBar () {
-                show_start_title_buttons = false,
-                show_end_title_buttons = false,
-            };
-            header.pack_start (cancel_button);
-            header.pack_end (add_button);
+            var header = Dialogs.action_header (this, add_button);
 
             var names = new Gtk.StringList (null);
             foreach (var template in templates) {
@@ -463,11 +453,7 @@ namespace DockStation {
                         break;
                     case ServiceOptionType.FOLDER:
                         var entry = new Adw.EntryRow () { title = option.title };
-                        var browse = new Gtk.Button.from_icon_name ("folder-open-symbolic") {
-                            tooltip_text = _("Choose Folder"),
-                            valign = Gtk.Align.CENTER,
-                        };
-                        browse.add_css_class ("flat");
+                        var browse = Utils.flat_icon_button ("folder-open-symbolic", _("Choose Folder"));
                         browse.clicked.connect (() => choose_folder.begin (entry));
                         entry.add_suffix (browse);
                         entry.changed.connect (update_state);
