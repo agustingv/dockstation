@@ -1,3 +1,8 @@
+## DockStation v0.1.3
+
+### Fixes
+- A project whose folder has already been deleted can now be deleted from DockStation.
+
 ## DockStation v0.1.2
 
 ### Packaging
