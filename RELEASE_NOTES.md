@@ -1,3 +1,8 @@
+## DockStation v0.1.12
+
+### Internal
+- Project templates are now folders of data in `data/templates` instead of text inside the code, like the built-in services. The projects they create are unchanged.
+
 ## DockStation v0.1.11
 
 ### Changes

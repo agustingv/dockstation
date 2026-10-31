@@ -27,6 +27,11 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.1.12" date="2026-10-31">
+      <description>
+        <p>Internal improvements to how project templates are stored.</p>
+      </description>
+    </release>
     <release version="0.1.11" date="2026-10-31">
       <description>
         <p>The window stays responsive while opening a file in the editor, and while reading files to add or remove a service.</p>
