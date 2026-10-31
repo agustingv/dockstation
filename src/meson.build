@@ -1,6 +1,6 @@
-dockstation_sources = files(
+# Everything but main (), so the tests can link it too.
+dockstation_core_sources = files(
   'config.vapi',
-  'main.vala',
   'application.vala',
   'window.vala',
   'utils.vala',
@@ -21,6 +21,9 @@ dockstation_sources = files(
   'service-templates.vala',
   'add-service.vala',
   'remove-service.vala',
+  'compose-overlay.vala',
+  'compose-include.vala',
+  'dialogs.vala',
   'background.vala',
   'tray-icon.vala',
 )
@@ -34,7 +37,7 @@ dockstation_deps = [
   meson.get_compiler('vala').find_library('posix'),
 ]
 
-executable('dockstation', dockstation_sources, dockstation_resources,
+executable('dockstation', files('main.vala'), dockstation_core_sources, dockstation_resources,
   dependencies: dockstation_deps,
   vala_args: ['--target-glib=2.76'],
   install: true,

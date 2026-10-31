@@ -4,6 +4,7 @@ src/add-service.vala
 src/application.vala
 src/background.vala
 src/database-init.vala
+src/dialogs.vala
 src/new-project-dialog.vala
 src/project.vala
 src/project-view.vala

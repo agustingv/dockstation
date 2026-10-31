@@ -28,6 +28,7 @@ add_project_arguments(
 
 subdir('data')
 subdir('src')
+subdir('tests')
 subdir('po')
 
 gnome.post_install(

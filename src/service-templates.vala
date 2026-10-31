@@ -55,6 +55,8 @@ namespace DockStation {
      */
     public class ServiceTemplate : Object {
         public const int FORMAT = 1;
+        // A service name, as a regular expression.
+        public const string NAME_PATTERN = "[a-z][a-z0-9_-]*";
 
         public string id { get; construct; }
         public string name { get; private set; }
@@ -93,12 +95,17 @@ namespace DockStation {
             return env_prefix (service) + "_PORT";
         }
 
+        /* The file a service added to a project lives in. */
+        public static string compose_file_name (string service) {
+            return "compose.%s.yaml".printf (service);
+        }
+
         public static string volume_name (string service) {
             return service + "-data";
         }
 
         public static bool is_valid_service_name (string name) {
-            return Regex.match_simple ("^[a-z][a-z0-9_-]*$", name);
+            return Regex.match_simple ("^" + NAME_PATTERN + "$", name);
         }
 
         private static bool is_placeholder_name (string name) {

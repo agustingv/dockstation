@@ -667,17 +667,10 @@ namespace DockStation {
         }
 
         private async void confirm_remove (Project project) {
-            var dialog = new Adw.AlertDialog (
-                _("Remove “%s” from the List?").printf (project.name),
-                _("The project folder, its containers and its volumes will not be deleted.")
-            );
-            dialog.add_response ("cancel", _("_Cancel"));
-            dialog.add_response ("remove", _("_Remove from List"));
-            dialog.set_response_appearance ("remove", Adw.ResponseAppearance.DESTRUCTIVE);
-            dialog.default_response = "cancel";
-            dialog.close_response = "cancel";
-
-            if ((yield dialog.choose (this, null)) != "remove") {
+            if (!(yield Dialogs.confirm (this,
+                    _("Remove “%s” from the List?").printf (project.name),
+                    _("The project folder, its containers and its volumes will not be deleted."),
+                    _("_Remove from List")))) {
                 return;
             }
             store.remove (project);

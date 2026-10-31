@@ -365,16 +365,6 @@ namespace DockStation {
             return button;
         }
 
-        private async bool confirm (string heading, string body, string action_label) {
-            var dialog = new Adw.AlertDialog (heading, body);
-            dialog.add_response ("cancel", _("_Cancel"));
-            dialog.add_response ("remove", action_label);
-            dialog.set_response_appearance ("remove", Adw.ResponseAppearance.DESTRUCTIVE);
-            dialog.default_response = "cancel";
-            dialog.close_response = "cancel";
-            return (yield dialog.choose (this, null)) == "remove";
-        }
-
         private void set_busy (bool value) {
             busy = value;
             spinner.visible = value;
@@ -421,7 +411,7 @@ namespace DockStation {
             var body = container.project != ""
                 ? _("The stopped container is removed. Its image and volumes are kept, and the project creates it again the next time it starts.")
                 : _("The stopped container is removed, including any changes made inside it. Its image and volumes are kept.");
-            if (yield confirm (_("Remove Container “%s”?").printf (container.name), body, _("_Remove"))) {
+            if (yield Dialogs.confirm (this, _("Remove Container “%s”?").printf (container.name), body, _("_Remove"))) {
                 yield run_cleanup ({ "container", "rm", container.id }, _("Removed “%s”").printf (container.name));
             }
         }
@@ -437,7 +427,7 @@ namespace DockStation {
             var reference = image.repository != "<none>" && image.tag != "<none>"
                 ? "%s:%s".printf (image.repository, image.tag)
                 : image.id;
-            if (yield confirm (_("Remove Image “%s”?").printf (image.display_name), body, _("_Remove"))) {
+            if (yield Dialogs.confirm (this, _("Remove Image “%s”?").printf (image.display_name), body, _("_Remove"))) {
                 yield run_cleanup ({ "image", "rm", reference }, _("Removed “%s”").printf (image.display_name));
             }
         }
@@ -447,13 +437,13 @@ namespace DockStation {
             if (volume.size > 0) {
                 body += " " + _("Frees %s.").printf (Utils.format_size (volume.size));
             }
-            if (yield confirm (_("Delete Volume “%s”?").printf (volume.name), body, _("_Delete"))) {
+            if (yield Dialogs.confirm (this, _("Delete Volume “%s”?").printf (volume.name), body, _("_Delete"))) {
                 yield run_cleanup ({ "volume", "rm", volume.name }, _("Deleted “%s”").printf (volume.name));
             }
         }
 
         private async void prune_containers (int count) {
-            if (yield confirm (
+            if (yield Dialogs.confirm (this,
                     ngettext ("Remove %d Stopped Container?", "Remove All %d Stopped Containers?", count).printf (count),
                     _("Docker estimates %s can be freed. Images and volumes are kept, and projects can create their containers again.").printf (reclaimable ("Containers")),
                     _("_Remove"))) {
@@ -462,7 +452,7 @@ namespace DockStation {
         }
 
         private async void prune_images (int count) {
-            if (yield confirm (
+            if (yield Dialogs.confirm (this,
                     ngettext ("Remove %d Unused Image?", "Remove All %d Unused Images?", count).printf (count),
                     _("Removes every image that no container uses, including images built by your projects; they are pulled or built again when needed. Docker estimates %s can be freed.").printf (reclaimable ("Images")),
                     _("_Remove"))) {
@@ -471,7 +461,7 @@ namespace DockStation {
         }
 
         private async void prune_volumes (int count) {
-            if (yield confirm (
+            if (yield Dialogs.confirm (this,
                     ngettext ("Delete %d Unused Volume?", "Delete All %d Unused Volumes?", count).printf (count),
                     _("All data in these volumes, such as databases, is deleted permanently. This cannot be undone. Volumes attached to a container, even a stopped one, are kept. Docker estimates %s can be freed.").printf (reclaimable ("Local Volumes")),
                     _("_Delete"))) {
@@ -480,7 +470,7 @@ namespace DockStation {
         }
 
         private async void prune_build_cache () {
-            if (yield confirm (
+            if (yield Dialogs.confirm (this,
                     _("Clear the Build Cache?"),
                     _("Docker estimates %s can be freed. The next image builds will take longer.").printf (reclaimable ("Build Cache")),
                     _("_Clear"))) {
