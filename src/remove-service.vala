@@ -1,6 +1,7 @@
 namespace DockStation {
     /* What removing a service changes; see ServiceRemover.prepare (). */
     public class ServiceRemoval : Object {
+        public string service;
         public string main_path;
         public string new_main;
         public File service_file;
@@ -122,6 +123,7 @@ namespace DockStation {
                 throw new IOError.NOT_FOUND (_("The project has no compose file"));
             }
             var removal = new ServiceRemoval ();
+            removal.service = service;
             removal.main_path = files[0];
             var file_name = ServiceTemplate.compose_file_name (service);
             removal.service_file = File.new_for_path (Path.build_filename (Path.get_dirname (removal.main_path), file_name));
@@ -199,8 +201,42 @@ namespace DockStation {
             return removal;
         }
 
+        /*
+         * Removes the service: the container first, because once the service is gone from the
+         * files Compose no longer knows it. Nothing else changes if that fails. Volumes that
+         * cannot be deleted do not stop it, and are described in `problems`.
+         */
+        public async void remove (CommandRunner runner, ServiceRemoval removal, bool delete_data,
+                                  out string[] problems) throws Error {
+            string[] found = {};
+            problems = found;
+            var service = removal.service;
+            if (!(yield runner.run (Docker.compose_args ({ "rm", "--stop", "--force", "--volumes", service })))) {
+                throw new IOError.FAILED (_("Could not remove the “%s” container").printf (service));
+            }
+            if (delete_data) {
+                foreach (unowned string volume in removal.volumes) {
+                    try {
+                        if (!(yield runner.run ({ "volume", "rm", volume }))) {
+                            found += _("Could not delete the volume %s").printf (volume);
+                        }
+                    } catch (IOError.CANCELLED e) {
+                        throw e;
+                    } catch (Error e) {
+                        found += e.message;
+                    }
+                }
+            }
+            problems = found;
+            try {
+                apply (removal);
+            } catch (Error e) {
+                throw new IOError.FAILED (_("Could not remove “%s”: %s").printf (service, e.message));
+            }
+        }
+
         /* Changes the files: the include first, so the compose file never points to a missing file. */
-        public void apply (ServiceRemoval removal) throws Error {
+        private void apply (ServiceRemoval removal) throws Error {
             File.new_for_path (removal.main_path).replace_contents (removal.new_main.data, null, false, FileCreateFlags.NONE, null);
             try {
                 removal.service_file.delete ();

@@ -352,7 +352,7 @@ The built-in services are compiled into the app: after adding a file to `data/se
 | `src/tray-controller.vala` | What the tray menu shows and does |
 | `src/window.vala` | Main window: sidebar, navigation, adding, removing and deleting projects |
 | `src/project-monitor.vala` | Periodic update of every project's state |
-| `src/project-view.vala` | Per-project page: tabs, project actions, removing services, resetting databases, output |
+| `src/project-view.vala` | Per-project page: tabs, project actions, their dialogs, output |
 | `src/services-page.vala` | Services tab: the project's state and a row per service |
 | `src/editor-page.vala` | Configuration tab: editing and validating the project's files |
 | `src/logs-page.vala` | Logs tab |
@@ -362,6 +362,8 @@ The built-in services are compiled into the app: after adding a file to `data/se
 | `src/service-templates.vala` | Loads the services offered by Add Service |
 | `src/add-service.vala` | Add Service dialog, and adding a service's files to a project |
 | `src/remove-service.vala` | Removing a service added with Add Service |
+| `src/database-reset.vala` | Resetting a database from its init scripts |
+| `src/command-runner.vala` | Runs docker commands for those two, showing their output; tests replace it |
 | `src/compose-include.vala` | Reads the `include:` list of a compose file |
 | `src/compose-overlay.vala` | Runs Compose against temporary copies of files with unsaved changes |
 | `src/dialogs.vala` | Confirmation and error dialogs |

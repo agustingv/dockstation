@@ -21,6 +21,8 @@ dockstation_core_sources = files(
   'settings.vala',
   'container-details.vala',
   'database-init.vala',
+  'database-reset.vala',
+  'command-runner.vala',
   'traefik.vala',
   'service-templates.vala',
   'add-service.vala',

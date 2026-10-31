@@ -326,6 +326,231 @@ private void inspect_tests () {
     });
 }
 
+/* Records commands instead of running them. Commands containing `fail_on` report failure. */
+private class FakeRunner : Object, CommandRunner {
+    public string[] commands = {};
+    public string? fail_on = null;
+    public string? throw_on = null;
+
+    public async bool run (string[] docker_args) throws Error {
+        var command = string.joinv (" ", docker_args).replace ("compose --ansi never --progress plain ", "compose ");
+        commands += command;
+        if (throw_on != null && command.contains (throw_on)) {
+            throw new IOError.FAILED ("thrown");
+        }
+        return fail_on == null || !command.contains (fail_on);
+    }
+}
+
+private DatabaseInit database_in_volume (string volume = "blog_db-data") {
+    var database = new DatabaseInit ();
+    database.image_id = "sha256:img";
+    database.engine = "PostgreSQL";
+    database.data_type = "volume";
+    database.data_volume = volume;
+    return database;
+}
+
+private DatabaseInit database_in_folder (string folder) {
+    var database = database_in_volume ("");
+    database.data_type = "bind";
+    database.data_source = folder;
+    return database;
+}
+
+const string PROJECT = "/srv/blog";
+
+private async void check_reset (DatabaseInit database, string? fail_on, bool expected, string[] expected_commands) {
+    var runner = new FakeRunner () { fail_on = fail_on };
+    try {
+        var result = yield DatabaseReset.run (runner, "db", database, PROJECT);
+        assert (result == expected);
+    } catch (Error e) {
+        error (e.message);
+    }
+    eq (string.joinv ("\n", runner.commands), string.joinv ("\n", expected_commands));
+}
+
+private void wait_for_reset (DatabaseInit database, string? fail_on, bool expected, string[] expected_commands) {
+    var loop = new MainLoop ();
+    check_reset.begin (database, fail_on, expected, expected_commands, (obj, res) => {
+        check_reset.end (res);
+        loop.quit ();
+    });
+    loop.run ();
+}
+
+private void database_reset_tests () {
+    Test.add_func ("/reset/named-volume", () => {
+        wait_for_reset (database_in_volume (), null, true, { "compose stop db", "compose rm --force --volumes db", "volume rm blog_db-data", "compose up --detach db" });
+    });
+    Test.add_func ("/reset/unnamed-volume-goes-with-the-container", () => {
+        wait_for_reset (database_in_volume ("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"), null, true,
+                        { "compose stop db", "compose rm --force --volumes db", "compose up --detach db" });
+    });
+    Test.add_func ("/reset/folder-is-emptied-inside-the-image", () => {
+        wait_for_reset (database_in_folder ("/srv/blog/data"), null, true, {
+            "compose stop db", "compose rm --force --volumes db",
+            "run --rm --entrypoint sh --volume /srv/blog/data:/reset sha256:img -c find /reset -mindepth 1 -delete",
+            "compose up --detach db",
+        });
+    });
+    // The point of the order: a container that is still there keeps its data.
+    Test.add_func ("/reset/failed-stop-touches-nothing", () => {
+        wait_for_reset (database_in_volume (), "compose stop", false, { "compose stop db" });
+    });
+    Test.add_func ("/reset/failed-removal-keeps-the-data", () => {
+        wait_for_reset (database_in_volume (), "compose rm", false, { "compose stop db", "compose rm --force --volumes db" });
+    });
+    Test.add_func ("/reset/failed-emptying-still-starts-the-service", () => {
+        wait_for_reset (database_in_volume (), "volume rm", false, { "compose stop db", "compose rm --force --volumes db", "volume rm blog_db-data", "compose up --detach db" });
+    });
+    Test.add_func ("/reset/failed-start-is-a-failure", () => {
+        wait_for_reset (database_in_volume (), "compose up", false, { "compose stop db", "compose rm --force --volumes db", "volume rm blog_db-data", "compose up --detach db" });
+    });
+    Test.add_func ("/reset/unsafe-folders-are-refused", () => {
+        var home = Environment.get_home_dir ();
+        foreach (unowned string folder in new string[] { "/", home, Path.get_dirname (home), PROJECT, "/srv" }) {
+            assert (DatabaseReset.unsafe_data_folder (database_in_folder (folder), PROJECT) != null);
+
+            var runner = new FakeRunner ();
+            var loop = new MainLoop ();
+            bool refused = false;
+            DatabaseReset.run.begin (runner, "db", database_in_folder (folder), PROJECT, (obj, res) => {
+                try {
+                    DatabaseReset.run.end (res);
+                } catch (IOError.INVALID_ARGUMENT e) {
+                    refused = true;
+                } catch (Error e) {
+                    error (e.message);
+                }
+                loop.quit ();
+            });
+            loop.run ();
+            assert (refused);
+            eq_int (runner.commands.length, 0);
+        }
+        foreach (unowned string folder in new string[] { "/srv/blog/data", "/var/lib/db", home + "/data" }) {
+            assert (DatabaseReset.unsafe_data_folder (database_in_folder (folder), PROJECT) == null);
+        }
+        assert (DatabaseReset.unsafe_data_folder (database_in_volume (), PROJECT) == null);
+    });
+    Test.add_func ("/reset/descriptions", () => {
+        eq (DatabaseReset.storage_description (database_in_volume ("x")), "the volume “x”");
+        eq (DatabaseReset.storage_description (database_in_volume ("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")), "an unnamed volume");
+        eq (DatabaseReset.storage_description (database_in_folder ("/srv/d")), "the folder “/srv/d”");
+    });
+}
+
+private class RemovalFixture {
+    public string dir;
+    public string main;
+    public string service_file;
+    public string env;
+    public ServiceRemoval removal;
+
+    public RemovalFixture () throws Error {
+        dir = temp_project ();
+        main = Path.build_filename (dir, "compose.yaml");
+        service_file = Path.build_filename (dir, "compose.db.yaml");
+        env = Path.build_filename (dir, ".env");
+        FileUtils.set_contents (main, "old main");
+        FileUtils.set_contents (service_file, "service");
+        FileUtils.set_contents (env, "old env");
+        removal = new ServiceRemoval ();
+        removal.service = "db";
+        removal.main_path = main;
+        removal.new_main = "new main";
+        removal.service_file = File.new_for_path (service_file);
+        removal.env_file = File.new_for_path (env);
+        removal.new_env = "new env";
+        removal.volumes = { "vol1", "vol2" };
+    }
+
+    public string text (string path) throws Error {
+        string contents;
+        FileUtils.get_contents (path, out contents);
+        return contents;
+    }
+
+    public void clean () {
+        foreach (unowned string file in new string[] { main, service_file, env }) {
+            FileUtils.unlink (file);
+        }
+        DirUtils.remove (dir);
+    }
+}
+
+private delegate void RemovalCheck (RemovalFixture fixture, FakeRunner runner, string[] problems, string? failure) throws Error;
+
+private void check_removal (string? fail_on, string? throw_on, bool delete_data, RemovalCheck check) {
+    try {
+        var fixture = new RemovalFixture ();
+        var runner = new FakeRunner () { fail_on = fail_on, throw_on = throw_on };
+        var loop = new MainLoop ();
+        string[] problems = {};
+        string? failure = null;
+        ServiceRemover.remove.begin (runner, fixture.removal, delete_data, (obj, res) => {
+            try {
+                ServiceRemover.remove.end (res, out problems);
+            } catch (Error e) {
+                failure = e.message;
+            }
+            loop.quit ();
+        });
+        loop.run ();
+        check (fixture, runner, problems, failure);
+        fixture.clean ();
+    } catch (Error e) {
+        error (e.message);
+    }
+}
+
+private void service_removal_tests () {
+    Test.add_func ("/removal/keeps-data-by-default", () => {
+        check_removal (null, null, false, (fixture, runner, problems, failure) => {
+            assert (failure == null);
+            eq_list (runner.commands, { "compose rm --stop --force --volumes db" });
+            eq (fixture.text (fixture.main), "new main");
+            eq (fixture.text (fixture.env), "new env");
+            assert (!FileUtils.test (fixture.service_file, FileTest.EXISTS));
+        });
+    });
+    Test.add_func ("/removal/deletes-volumes-after-the-container", () => {
+        check_removal (null, null, true, (fixture, runner, problems, failure) => {
+            assert (failure == null);
+            eq_int (problems.length, 0);
+            eq_list (runner.commands, { "compose rm --stop --force --volumes db", "volume rm vol1", "volume rm vol2" });
+        });
+    });
+    // The files still name the service, so the user can try again.
+    Test.add_func ("/removal/failed-container-changes-nothing", () => {
+        check_removal ("compose rm", null, true, (fixture, runner, problems, failure) => {
+            assert (failure != null && failure.contains ("db"));
+            eq_list (runner.commands, { "compose rm --stop --force --volumes db" });
+            eq (fixture.text (fixture.main), "old main");
+            eq (fixture.text (fixture.env), "old env");
+            assert (FileUtils.test (fixture.service_file, FileTest.EXISTS));
+        });
+    });
+    Test.add_func ("/removal/failed-volume-is-reported-and-the-rest-goes-on", () => {
+        check_removal ("vol1", null, true, (fixture, runner, problems, failure) => {
+            assert (failure == null);
+            eq_int (problems.length, 1);
+            assert (problems[0].contains ("vol1"));
+            eq_list (runner.commands, { "compose rm --stop --force --volumes db", "volume rm vol1", "volume rm vol2" });
+            eq (fixture.text (fixture.main), "new main");
+        });
+    });
+    Test.add_func ("/removal/volume-error-is-reported-too", () => {
+        check_removal (null, "vol2", true, (fixture, runner, problems, failure) => {
+            assert (failure == null);
+            eq_list (problems, { "thrown" });
+            eq (fixture.text (fixture.main), "new main");
+        });
+    });
+}
+
 private void overlay_tests () {
     Test.add_func ("/overlay/replaces-file-keeping-the-others", () => {
         try {
@@ -490,6 +715,8 @@ int main (string[] args) {
     traefik_tests ();
     utils_tests ();
     docker_tests ();
+    database_reset_tests ();
+    service_removal_tests ();
     inspect_tests ();
     overlay_tests ();
     added_services_tests ();
