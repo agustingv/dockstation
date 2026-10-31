@@ -102,8 +102,8 @@ namespace DockStation {
      * Thin asynchronous wrapper around the docker CLI. When running inside
      * Flatpak, commands are forwarded to the host with flatpak-spawn.
      */
-    public class Docker : Object {
-        private static Subprocess spawn (string? cwd, string[] args, SubprocessFlags flags) throws Error {
+    namespace Docker {
+        private Subprocess spawn (string? cwd, string[] args, SubprocessFlags flags) throws Error {
             var launcher = new SubprocessLauncher (flags);
             string[] argv = {};
             if (Utils.in_flatpak ()) {
@@ -135,7 +135,7 @@ namespace DockStation {
          * The Compose containers of the project in `working_dir`, or of every project if it
          * is null. Fails with IOError.FAILED, and Docker's message, if Docker reports an error.
          */
-        public static async GenericArray<ComposeContainer> compose_containers (string? working_dir,
+        public async GenericArray<ComposeContainer> compose_containers (string? working_dir,
                                                                                 Cancellable? cancellable = null) throws Error {
             var label = "label=com.docker.compose.project";
             var filter = working_dir != null ? label + ".working_dir=" + working_dir : label;
@@ -147,7 +147,7 @@ namespace DockStation {
         }
 
         /* Arguments for a `docker compose` command, with plain output that is easy to show. */
-        public static string[] compose_args (string[] args) {
+        public string[] compose_args (string[] args) {
             string[] result = { "compose", "--ansi", "never", "--progress", "plain" };
             foreach (unowned string arg in args) {
                 result += arg;
@@ -156,7 +156,7 @@ namespace DockStation {
         }
 
         /* Runs a command to completion and collects its output. */
-        public static async CommandResult run (string? cwd, owned string[] args, Cancellable? cancellable = null) throws Error {
+        public async CommandResult run (string? cwd, owned string[] args, Cancellable? cancellable = null) throws Error {
             var proc = spawn (cwd, args, SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_PIPE);
             string? out_text = null;
             string? err_text = null;
@@ -174,7 +174,7 @@ namespace DockStation {
         }
 
         /* Runs a command, delivering stdout+stderr line by line. Returns the exit status. */
-        public static async int stream (string? cwd, owned string[] args, owned LineFunc on_line, Cancellable? cancellable = null) throws Error {
+        public async int stream (string? cwd, owned string[] args, owned LineFunc on_line, Cancellable? cancellable = null) throws Error {
             var proc = spawn (cwd, args, SubprocessFlags.STDOUT_PIPE | SubprocessFlags.STDERR_MERGE);
             var input = new DataInputStream (proc.get_stdout_pipe ());
             try {
