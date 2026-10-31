@@ -1,3 +1,13 @@
+## DockStation v0.1.5
+
+### Changes
+- A project's containers are inspected with one `docker inspect` instead of two.
+- Project templates now fail with an error if a placeholder has no value, instead of writing it to the project's files. A project name containing a placeholder is no longer expanded.
+
+### Internal
+- The project view and the main window are split into smaller classes.
+- Less duplicated code, and more unit tests.
+
 ## DockStation v0.1.4
 
 ### Fixes
