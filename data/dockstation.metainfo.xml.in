@@ -27,6 +27,11 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.1.9" date="2026-10-31">
+      <description>
+        <p>Internal improvements to the code's organization.</p>
+      </description>
+    </release>
     <release version="0.1.8" date="2026-10-31">
       <description>
         <p>Internal improvements to how the interface reacts to its own changes.</p>

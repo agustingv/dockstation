@@ -1,3 +1,8 @@
+## DockStation v0.1.9
+
+### Internal
+- The code that runs Docker commands is now a namespace instead of a class with only static methods, like the rest of the code of its kind. No changes in behavior.
+
 ## DockStation v0.1.8
 
 ### Internal
