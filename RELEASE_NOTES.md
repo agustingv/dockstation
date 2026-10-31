@@ -1,3 +1,8 @@
+## DockStation v0.1.15
+
+### Fixes
+- A project's services are always listed in alphabetical order, in the Services tab and in the Logs tab's list. Before, a row could change place between launches, and a new service stayed last until the next one.
+
 ## DockStation v0.1.14
 
 ### Changes

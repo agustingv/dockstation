@@ -27,6 +27,11 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.1.15" date="2026-10-31">
+      <description>
+        <p>A project's services are always listed in alphabetical order.</p>
+      </description>
+    </release>
     <release version="0.1.14" date="2026-10-31">
       <description>
         <p>The window stays responsive while reading a project's compose files to validate them or to add or remove a service.</p>
