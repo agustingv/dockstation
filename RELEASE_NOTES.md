@@ -1,3 +1,9 @@
+## DockStation v0.1.11
+
+### Changes
+- The window no longer freezes on a slow disk or network folder while the editor opens a file, or while reading the project's files to add or remove a service.
+- While a file is being read, the editor keeps showing the previous one and it cannot be edited. Choosing another file cancels the read in progress.
+
 ## DockStation v0.1.10
 
 ### Internal
