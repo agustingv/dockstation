@@ -1,3 +1,11 @@
+## DockStation v0.1.13
+
+### Fixes
+- **Stop in the tray menu could remove containers.** For a project whose folder no longer exists, Stop could do nothing, fail, or remove the project's containers instead of stopping them. Volumes were not removed in the case observed, but data written only inside those containers is lost. It now stops them.
+
+### Internal
+- Models and helpers no longer use GTK or CSS classes, and `Project` no longer runs Docker commands.
+
 ## DockStation v0.1.12
 
 ### Internal
