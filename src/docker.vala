@@ -11,11 +11,65 @@ namespace DockStation {
 
     public delegate void LineFunc (string line);
 
+    /* The state Docker reports for a container. */
+    public enum ContainerState {
+        UNKNOWN,
+        CREATED,
+        RUNNING,
+        RESTARTING,
+        PAUSED,
+        REMOVING,
+        EXITED,
+        DEAD;
+
+        public static ContainerState parse (string name) {
+            switch (name) {
+                case "created": return CREATED;
+                case "running": return RUNNING;
+                case "restarting": return RESTARTING;
+                case "paused": return PAUSED;
+                case "removing": return REMOVING;
+                case "exited": return EXITED;
+                case "dead": return DEAD;
+                default: return UNKNOWN;
+            }
+        }
+
+        /* Docker's own name for the state. */
+        public string docker_name () {
+            switch (this) {
+                case CREATED: return "created";
+                case RUNNING: return "running";
+                case RESTARTING: return "restarting";
+                case PAUSED: return "paused";
+                case REMOVING: return "removing";
+                case EXITED: return "exited";
+                case DEAD: return "dead";
+                default: return "unknown";
+            }
+        }
+
+        public string to_css_class () {
+            switch (this) {
+                case RUNNING:
+                    return "success";
+                case RESTARTING:
+                case PAUSED:
+                case REMOVING:
+                    return "warning";
+                case DEAD:
+                    return "error";
+                default:
+                    return "dim-label";
+            }
+        }
+    }
+
     /* One line of `docker ps --format COMPOSE_PS_FORMAT`. */
     public class ComposeContainer {
         public string working_dir;
         public string service;
-        public string state;
+        public ContainerState state;
         public string status;
         public string ports;
         public string id;
@@ -34,7 +88,7 @@ namespace DockStation {
                 var container = new ComposeContainer ();
                 container.working_dir = f[0];
                 container.service = f[1];
-                container.state = f[3];
+                container.state = ContainerState.parse (f[3]);
                 container.status = f[4];
                 container.ports = f[5];
                 container.id = f[6];

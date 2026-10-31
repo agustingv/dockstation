@@ -8,7 +8,7 @@ namespace DockStation {
 
         /* Refuses to empty folders that obviously hold more than the database. */
         public string? unsafe_data_folder (DatabaseInit database, string project_path) {
-            if (database.data_type != "bind") {
+            if (database.data_type != MountType.BIND) {
                 return null;
             }
             var folder = File.new_for_path (database.data_source);
@@ -24,7 +24,7 @@ namespace DockStation {
 
         /* Where the data is, to complete a sentence: "the volume “x”". */
         public string storage_description (DatabaseInit database) {
-            if (database.data_type == "bind") {
+            if (database.data_type == MountType.BIND) {
                 return _("the folder “%s”").printf (Utils.home_relative (database.data_source));
             }
             if (database.data_is_anonymous_volume) {
@@ -66,9 +66,9 @@ namespace DockStation {
             }
 
             bool emptied = true;
-            if (database.data_type == "volume" && !database.data_is_anonymous_volume) {
+            if (database.data_type == MountType.VOLUME && !database.data_is_anonymous_volume) {
                 emptied = yield runner.run ({ "volume", "rm", database.data_volume });
-            } else if (database.data_type == "bind") {
+            } else if (database.data_type == MountType.BIND) {
                 // Run as root inside the database image: the files belong to its user.
                 emptied = yield runner.run ({
                     "run", "--rm", "--entrypoint", "sh", "--volume", database.data_source + ":/reset",

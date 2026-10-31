@@ -42,7 +42,7 @@ namespace DockStation {
         }
 
         private TrayMenuItem[] menu_items () {
-            TrayMenuItem[] items = { new TrayMenuItem (_("Open DockStation"), "open") };
+            TrayMenuItem[] items = { new TrayMenuItem (_("Open DockStation"), TrayAction.OPEN) };
             if (store.projects.get_n_items () > 0) {
                 items += new TrayMenuItem.separator ();
             }
@@ -52,36 +52,38 @@ namespace DockStation {
                 var running = project.is_running;
                 var entry = new TrayMenuItem ("%s — %s".printf (TrayMenuItem.escape (project.name), busy ?? project.status_label));
                 entry.children = {
-                    new TrayMenuItem (_("Open"), "open-project", project),
-                    new TrayMenuItem (running ? _("Stop") : _("Start"), running ? "stop" : "start", project) { enabled = busy == null },
-                    new TrayMenuItem (_("Restart"), "restart", project) { enabled = busy == null && running },
+                    new TrayMenuItem (_("Open"), TrayAction.OPEN_PROJECT, project),
+                    new TrayMenuItem (running ? _("Stop") : _("Start"), running ? TrayAction.STOP : TrayAction.START, project) { enabled = busy == null },
+                    new TrayMenuItem (_("Restart"), TrayAction.RESTART, project) { enabled = busy == null && running },
                 };
                 items += entry;
             }
             items += new TrayMenuItem.separator ();
-            items += new TrayMenuItem (_("Quit"), "quit");
+            items += new TrayMenuItem (_("Quit"), TrayAction.QUIT);
             return items;
         }
 
         private void on_item (TrayMenuItem item) {
             var project = item.target as Project;
             switch (item.action) {
-                case "open":
+                case TrayAction.NONE:
+                    break;
+                case TrayAction.OPEN:
                     open_requested ();
                     break;
-                case "quit":
+                case TrayAction.QUIT:
                     application.activate_action ("quit", null);
                     break;
-                case "open-project":
+                case TrayAction.OPEN_PROJECT:
                     project_open_requested (project);
                     break;
-                case "start":
+                case TrayAction.START:
                     run_command.begin (project, { "up", "--detach" }, _("Starting…"), _("Could not start “%s”"));
                     break;
-                case "stop":
+                case TrayAction.STOP:
                     run_command.begin (project, { "stop" }, _("Stopping…"), _("Could not stop “%s”"));
                     break;
-                case "restart":
+                case TrayAction.RESTART:
                     run_command.begin (project, { "restart" }, _("Restarting…"), _("Could not restart “%s”"));
                     break;
             }

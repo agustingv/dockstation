@@ -36,21 +36,6 @@ namespace DockStation.Utils {
         widget.add_css_class (css_class);
     }
 
-    public string container_state_class (string state) {
-        switch (state) {
-            case "running":
-                return "success";
-            case "restarting":
-            case "paused":
-            case "removing":
-                return "warning";
-            case "dead":
-                return "error";
-            default:
-                return "dim-label";
-        }
-    }
-
     /* Turns a human project name into a folder / compose project name. */
     public string slugify (string text) {
         var normalized = text.normalize (-1, NormalizeMode.NFD).down ();
