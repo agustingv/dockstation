@@ -398,7 +398,7 @@ namespace DockStation {
                         ? _("%s · %s freed").printf (success_message, Utils.format_size (freed))
                         : success_message);
                 } else {
-                    toast (result.stderr_text.strip ().split ("\n")[0] ?? _("The command failed"));
+                    toast (Utils.first_line (result.stderr_text) ?? _("The command failed"));
                 }
             } catch (Error e) {
                 toast (e.message);

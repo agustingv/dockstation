@@ -654,7 +654,8 @@ namespace DockStation {
             bar.append (revert_button);
             bar.append (save_button);
 
-            editor_banner = new Adw.Banner ("");
+            // Compose's messages are plain text, not markup.
+            editor_banner = new Adw.Banner ("") { use_markup = false };
 
             editor_buffer = new GtkSource.Buffer (null);
             editor_buffer.changed.connect (() => {
@@ -1465,8 +1466,7 @@ namespace DockStation {
                         reload ();
                     }
                 } else {
-                    var message = overlay.restore_paths (result.stderr_text.strip ());
-                    editor_banner.title = Markup.escape_text (message);
+                    editor_banner.title = overlay.restore_paths (result.stderr_text.strip ());
                     editor_banner.revealed = true;
                 }
             } catch (IOError.CANCELLED e) {

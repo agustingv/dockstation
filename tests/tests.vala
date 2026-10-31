@@ -176,6 +176,15 @@ private void utils_tests () {
         eq (Utils.simplify_ports ("80/tcp"), "");
         eq_int (Utils.first_host_port ("80/tcp"), 0);
     });
+    Test.add_func ("/utils/first-line", () => {
+        eq (Utils.first_line ("\n  first  \nsecond\n"), "first");
+        assert (Utils.first_line (" \n ") == null);
+    });
+    Test.add_func ("/utils/strip-terminal-codes", () => {
+        eq (Utils.strip_terminal_codes ("\x1b[2Kdb-1  | ready"), "db-1  | ready");
+        eq (Utils.strip_terminal_codes ("\x1b[1;32mok\x1b[0m \x1b[?25lend"), "ok end");
+        eq (Utils.strip_terminal_codes ("plain [2K text"), "plain [2K text");
+    });
     Test.add_func ("/utils/split-lines", () => {
         eq_list (Utils.split_lines ("a\n\n  b  \n"), { "a", "b" });
     });

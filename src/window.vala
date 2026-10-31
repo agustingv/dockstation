@@ -115,7 +115,8 @@ namespace DockStation {
             sidebar_header.pack_start (add_button);
             sidebar_header.pack_end (menu_button);
 
-            docker_banner = new Adw.Banner ("") { button_label = _("Retry") };
+            // Docker's messages are plain text, not markup.
+            docker_banner = new Adw.Banner ("") { button_label = _("Retry"), use_markup = false };
             docker_banner.button_clicked.connect (() => refresh.begin ());
 
             project_list = new Gtk.ListBox ();
@@ -728,11 +729,11 @@ namespace DockStation {
         }
 
         private void show_docker_error (string message) {
-            var first_line = message.strip ().split ("\n")[0] ?? "";
+            var first_line = Utils.first_line (message) ?? "";
             if (first_line.contains ("No such file or directory")) {
                 first_line = _("Docker is not installed");
             }
-            docker_banner.title = Markup.escape_text (first_line);
+            docker_banner.title = first_line;
             docker_banner.revealed = true;
             for (uint i = 0; i < store.projects.get_n_items (); i++) {
                 ((Project) store.projects.get_item (i)).mark_unknown ();

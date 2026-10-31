@@ -88,7 +88,7 @@ namespace DockStation {
 
             var df = yield Docker.run (null, { "system", "df", "--verbose", "--format", DF_FORMAT }, cancellable);
             if (!df.success) {
-                throw new IOError.FAILED (df.stderr_text.strip ().split ("\n")[0] ?? _("Could not read Docker disk usage"));
+                throw new IOError.FAILED (Utils.first_line (df.stderr_text) ?? _("Could not read Docker disk usage"));
             }
             resources.parse_disk_usage (df.stdout_text);
 

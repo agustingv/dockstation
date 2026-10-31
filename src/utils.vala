@@ -55,6 +55,24 @@ namespace DockStation.Utils {
         return lines;
     }
 
+    /* The first line of a command's message, or null if it is empty. */
+    public string? first_line (string text) {
+        var lines = text.strip ().split ("\n");
+        return lines.length > 0 ? lines[0].strip () : null;
+    }
+
+    /* Removes terminal control sequences; Compose sends them even with --no-color, such as ESC[2K before log lines. */
+    public string strip_terminal_codes (string text) {
+        if (!text.contains ("\x1b")) {
+            return text;
+        }
+        try {
+            return /\x1b\[[0-9;?]*[ -\/]*[@-~]/.replace (text, -1, 0, "");
+        } catch (RegexError e) {
+            return text;
+        }
+    }
+
     private Regex? port_regex = null;
 
     private Regex get_port_regex () {

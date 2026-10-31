@@ -123,7 +123,7 @@ namespace DockStation {
                     if (!line.validate ()) {
                         line = line.make_valid ();
                     }
-                    on_line (line);
+                    on_line (Utils.strip_terminal_codes (line));
                 }
             } catch (Error e) {
                 // SIGTERM (not SIGKILL) so flatpak-spawn can forward it to the host process.
