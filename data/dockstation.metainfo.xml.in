@@ -27,6 +27,11 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.1.2" date="2026-10-31">
+      <description>
+        <p>The Fedora package now also installs the graphics library DockStation needs to start on desktops other than GNOME.</p>
+      </description>
+    </release>
     <release version="0.1.1" date="2026-10-30">
       <description>
         <p>Packages for Debian, Ubuntu, Fedora and openSUSE, with a download page and updates through APT and DNF.</p>

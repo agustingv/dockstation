@@ -1,3 +1,8 @@
+## DockStation v0.1.2
+
+### Packaging
+- The `.rpm` recommends `libglvnd-gles`. Without it, DockStation aborts at startup, which could happen on Fedora desktops other than GNOME.
+
 ## DockStation v0.1.1
 
 ### Packaging
