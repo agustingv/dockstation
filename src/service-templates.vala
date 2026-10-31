@@ -195,7 +195,7 @@ namespace DockStation {
             return ini.has_key (group, key) ? ini.get_locale_string (group, key) : "";
         }
 
-        private static string read_file (File file) throws Error {
+        public static string read_file (File file) throws Error {
             uint8[] contents;
             file.load_contents (null, out contents, null);
             var text = (string) contents;
@@ -205,7 +205,7 @@ namespace DockStation {
             return text;
         }
 
-        private static void collect_files (File root, File dir, GenericArray<string> paths,
+        public static void collect_files (File root, File dir, GenericArray<string> paths,
                                            GenericArray<string> contents) throws Error {
             var children = dir.enumerate_children ("standard::name,standard::type", FileQueryInfoFlags.NOFOLLOW_SYMLINKS);
             FileInfo? info;

@@ -941,94 +941,6 @@ msgstr ""
 msgid "Stop"
 msgstr ""
 
-#: src/templates.vala:119
-msgid "Blank"
-msgstr ""
-
-#: src/templates.vala:119
-msgid "A minimal compose file to start from scratch"
-msgstr ""
-
-#: src/templates.vala:134
-msgid "Static Website"
-msgstr ""
-
-#: src/templates.vala:134
-msgid "Nginx serving the files in ./html"
-msgstr ""
-
-#: src/templates.vala:161
-msgid "PostgreSQL + Adminer"
-msgstr ""
-
-#: src/templates.vala:161
-msgid "A PostgreSQL database with a web administration UI"
-msgstr ""
-
-#: src/templates.vala:199
-msgid "PHP App"
-msgstr ""
-
-#: src/templates.vala:199
-msgid "PHP with Apache, serving the files in ./src"
-msgstr ""
-
-#: src/templates.vala:200
-msgid "The PHP version of the image"
-msgstr ""
-
-#: src/templates.vala:250
-msgid "WordPress"
-msgstr ""
-
-#: src/templates.vala:250
-msgid "WordPress with a MariaDB database"
-msgstr ""
-
-#: src/templates.vala:252
-msgid "Some plugins may not support the newest PHP yet"
-msgstr ""
-
-#: src/templates.vala:300
-msgid "Drupal"
-msgstr ""
-
-#: src/templates.vala:300
-msgid "Drupal 11 with a MariaDB database"
-msgstr ""
-
-#: src/templates.vala:302
-msgid "Drupal 11 requires PHP 8.3 or newer"
-msgstr ""
-
-#: src/templates.vala:366
-msgid "Node.js App"
-msgstr ""
-
-#: src/templates.vala:366
-msgid "A Node.js HTTP server built from a Dockerfile"
-msgstr ""
-
-#: src/templates.vala:408
-msgid "Python App"
-msgstr ""
-
-#: src/templates.vala:408
-msgid "A Flask application served by Gunicorn"
-msgstr ""
-
-#: src/templates.vala:440
-msgid "Symfony"
-msgstr ""
-
-#: src/templates.vala:440
-msgid "A Symfony app with PostgreSQL, created on first start"
-msgstr ""
-
-#: src/templates.vala:442
-msgid "Symfony 8 requires PHP 8.4 or newer; older versions get Symfony 7.4 LTS"
-msgstr ""
-
 #. Sidebar
 #: src/window.vala:78
 msgid "_New Project…"
@@ -1141,4 +1053,9 @@ msgstr ""
 
 #: src/window.vala:553
 msgid "Docker is not installed"
+msgstr ""
+
+#: src/templates.vala
+#, c-format
+msgid "Unknown Composer support “%s”"
 msgstr ""

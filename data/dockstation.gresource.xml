@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <!-- Built-in services for "Add Service"; list every file of data/services here. -->
+  <!-- Built-in services and project templates; list every file of data/services and data/templates here. -->
   <gresource prefix="/io/github/agustingv/dockstation">
     <file>services/adminer/compose.yaml</file>
     <file>services/adminer/service.ini</file>
@@ -32,5 +32,52 @@
     <file>services/tomcat/compose.yaml</file>
     <file>services/tomcat/files/{{FOLDER}}/ROOT/index.html</file>
     <file>services/tomcat/service.ini</file>
+    <file>templates/blank/files/compose.yaml</file>
+    <file>templates/blank/template.ini</file>
+    <file>templates/drupal/files/.env</file>
+    <file>templates/drupal/files/Dockerfile</file>
+    <file>templates/drupal/files/README.md</file>
+    <file>templates/drupal/files/compose.yaml</file>
+    <file>templates/drupal/template.ini</file>
+    <file>templates/nodejs/files/.dockerignore</file>
+    <file>templates/nodejs/files/.env</file>
+    <file>templates/nodejs/files/Dockerfile</file>
+    <file>templates/nodejs/files/compose.yaml</file>
+    <file>templates/nodejs/files/index.js</file>
+    <file>templates/nodejs/files/package.json</file>
+    <file>templates/nodejs/template.ini</file>
+    <file>templates/php/files/.dockerignore</file>
+    <file>templates/php/files/.env</file>
+    <file>templates/php/files/Dockerfile</file>
+    <file>templates/php/files/README.md</file>
+    <file>templates/php/files/compose.yaml</file>
+    <file>templates/php/files/src/index.php</file>
+    <file>templates/php/template.ini</file>
+    <file>templates/postgres-adminer/files/.env</file>
+    <file>templates/postgres-adminer/files/compose.yaml</file>
+    <file>templates/postgres-adminer/template.ini</file>
+    <file>templates/python/files/.dockerignore</file>
+    <file>templates/python/files/.env</file>
+    <file>templates/python/files/Dockerfile</file>
+    <file>templates/python/files/app.py</file>
+    <file>templates/python/files/compose.yaml</file>
+    <file>templates/python/files/requirements.txt</file>
+    <file>templates/python/template.ini</file>
+    <file>templates/static-website/files/.env</file>
+    <file>templates/static-website/files/compose.yaml</file>
+    <file>templates/static-website/files/html/index.html</file>
+    <file>templates/static-website/template.ini</file>
+    <file>templates/symfony/files/.dockerignore</file>
+    <file>templates/symfony/files/.env</file>
+    <file>templates/symfony/files/Dockerfile</file>
+    <file>templates/symfony/files/README.md</file>
+    <file>templates/symfony/files/app/.gitkeep</file>
+    <file>templates/symfony/files/compose.yaml</file>
+    <file>templates/symfony/files/docker-entrypoint.sh</file>
+    <file>templates/symfony/template.ini</file>
+    <file>templates/wordpress/files/.env</file>
+    <file>templates/wordpress/files/Dockerfile</file>
+    <file>templates/wordpress/files/compose.yaml</file>
+    <file>templates/wordpress/template.ini</file>
   </gresource>
 </gresources>

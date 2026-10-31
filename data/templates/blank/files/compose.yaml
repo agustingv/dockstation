@@ -1,0 +1,7 @@
+name: {{SLUG}}
+
+services:
+  app:
+    image: alpine:latest
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
