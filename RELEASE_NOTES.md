@@ -1,3 +1,15 @@
+## DockStation v0.1.4
+
+### Fixes
+- The message shown when Docker cannot be reached is readable again. It could show garbage, because it was read from memory that had already been freed.
+- Logs no longer show stray terminal codes before each line.
+- Quotes and other special characters display correctly in configuration and Docker errors.
+- Generating a password now fails with an error instead of falling back to a weak random generator.
+
+### Internal
+- Unit tests, which also run when the packages are built.
+- Less duplicated code, and removable services are no longer read from disk on every refresh.
+
 ## DockStation v0.1.3
 
 ### Fixes

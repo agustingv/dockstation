@@ -27,6 +27,16 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.1.4" date="2026-10-31">
+      <description>
+        <p>Fixes:</p>
+        <ul>
+          <li>The message shown when Docker cannot be reached is readable again</li>
+          <li>Logs no longer show stray terminal codes before each line</li>
+          <li>Quotes display correctly in configuration errors</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.1.3" date="2026-10-31">
       <description>
         <p>A project whose folder has already been deleted can now be deleted from DockStation.</p>
