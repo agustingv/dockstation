@@ -1,3 +1,8 @@
+## DockStation v0.1.10
+
+### Internal
+- Two different functions shared the name `compose_project_name`: they now have names that say what each one does, and a misplaced comment is back above its function. No changes in behavior.
+
 ## DockStation v0.1.9
 
 ### Internal
