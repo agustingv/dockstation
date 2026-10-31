@@ -1,3 +1,8 @@
+## DockStation v0.1.8
+
+### Internal
+- The sidebar, the editor and the logs tab no longer use boolean flags to ignore their own changes: the signal handler is blocked during the change instead. No changes in behavior.
+
 ## DockStation v0.1.7
 
 ### Changes
