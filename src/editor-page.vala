@@ -95,6 +95,8 @@ namespace DockStation {
         private string? editing_path = null;
         // Identifies the version on disk that was loaded, to detect changes made by other programs.
         private string? editing_etag = null;
+        // The file being read; the editor keeps showing the previous one until it is done.
+        private Cancellable? file_load = null;
         private ulong buffer_changed_handler;
         private ulong file_selected_handler;
         private bool dirty = false;
@@ -116,7 +118,7 @@ namespace DockStation {
 
         construct {
             add_action ("save-file", () => save_file.begin ());
-            add_action ("revert-file", () => load_file_at (current_file_index));
+            add_action ("revert-file", () => load_file_at.begin (current_file_index));
             add_action ("validate", () => validate.begin (false));
             child = build_ui ();
         }
@@ -136,6 +138,9 @@ namespace DockStation {
         /* Must be called before the page is discarded, to stop background work. */
         public void shutdown () {
             cancellable.cancel ();
+            if (file_load != null) {
+                file_load.cancel ();
+            }
             if (dockerfile_search != null) {
                 dockerfile_search.cancel ();
             }
@@ -276,7 +281,7 @@ namespace DockStation {
                 file_store.splice (0, file_store.get_n_items (), files);
                 file_dropdown.selected = 0;
             });
-            load_file_at (0);
+            load_file_at.begin (0);
             rescan_dockerfiles.begin ();
         }
 
@@ -337,21 +342,48 @@ namespace DockStation {
             set_action_enabled ("revert-file", value);
         }
 
-        private void load_file_at (uint index) {
-            current_file_index = index;
-            var file = file_at (index);
-            editing_path = Path.build_filename (project.path, file.path);
-            configure_editor_for (file);
+        /* Replaces what the editor shows, unless another file is asked for before this one is read. */
+        private async void load_file_at (uint index) {
+            if (file_load != null) {
+                file_load.cancel ();
+            }
+            var load = new Cancellable ();
+            file_load = load;
+            // The current text is being abandoned: nothing typed or saved from here on would count.
+            set_dirty (false);
+            editor_view.editable = false;
 
+            var file = file_at (index);
+            var path = Path.build_filename (project.path, file.path);
             uint8[] contents = {};
-            editing_etag = null;
+            string? etag = null;
             try {
-                File.new_for_path (editing_path).load_contents (null, out contents, out editing_etag);
+                yield File.new_for_path (path).load_contents_async (load, out contents, out etag);
+            } catch (IOError.CANCELLED e) {
+                return;
             } catch (IOError.NOT_FOUND e) {
                 // Not created yet (e.g. .env): saving creates it.
             } catch (Error e) {
                 toast (e.message);
             }
+            if (load.is_cancelled ()) {
+                return;
+            }
+            file_load = null;
+
+            // A search for Dockerfiles may have changed the list meanwhile.
+            var position = position_of (file.path);
+            if (position == Gtk.INVALID_LIST_POSITION) {
+                yield load_file_at (0);
+                return;
+            }
+            current_file_index = position;
+            Utils.without_handler (file_dropdown, file_selected_handler, () => {
+                file_dropdown.selected = position;
+            });
+            editing_path = path;
+            editing_etag = etag;
+            configure_editor_for (file);
 
             Utils.without_handler (editor_buffer, buffer_changed_handler, () => {
                 editor_buffer.begin_irreversible_action ();
@@ -364,6 +396,7 @@ namespace DockStation {
             editor_buffer.place_cursor (start);
 
             editor_banner.revealed = false;
+            editor_view.editable = true;
             set_dirty (false);
         }
 
@@ -390,11 +423,11 @@ namespace DockStation {
         }
 
         private void on_file_selected () {
-            if (file_dropdown.selected == current_file_index) {
+            if (file_dropdown.selected == current_file_index && file_load == null) {
                 return;
             }
             if (!dirty) {
-                load_file_at (file_dropdown.selected);
+                load_file_at.begin (file_dropdown.selected);
                 return;
             }
             var target = file_dropdown.selected;
@@ -406,7 +439,7 @@ namespace DockStation {
                 file_dropdown.selected = current_file_index;
                 return;
             }
-            load_file_at (target);
+            load_file_at.begin (target);
         }
 
         /*
@@ -431,7 +464,7 @@ namespace DockStation {
                 return yield save_file ();
             }
             if (response == "discard") {
-                load_file_at (current_file_index);
+                load_file_at.begin (current_file_index);
                 return true;
             }
             return false;
@@ -479,7 +512,7 @@ namespace DockStation {
                         continue;
                     }
                     if (response == "reload" && editing_path == path) {
-                        load_file_at (current_file_index);
+                        load_file_at.begin (current_file_index);
                     }
                     return !dirty;
                 } catch (Error e) {

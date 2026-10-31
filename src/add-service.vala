@@ -141,8 +141,7 @@ namespace DockStation {
             var file_name = ServiceTemplate.compose_file_name (service);
             var service_file = base_dir.get_child (file_name);
 
-            string main_text;
-            FileUtils.get_contents (main_path, out main_text);
+            var main_text = yield Utils.read_text (File.new_for_path (main_path));
             var new_main = add_include (main_text, file_name);
             if (new_main == null) {
                 throw new IOError.NOT_SUPPORTED (
@@ -163,9 +162,11 @@ namespace DockStation {
 
             var env_file = File.new_for_path (Path.build_filename (project.path, ".env"));
             string env_text = "";
-            bool env_existed = env_file.query_exists ();
-            if (env_existed) {
-                FileUtils.get_contents (env_file.get_path (), out env_text);
+            bool env_existed = true;
+            try {
+                env_text = yield Utils.read_text (env_file);
+            } catch (IOError.NOT_FOUND e) {
+                env_existed = false;
             }
             var existing_keys = Utils.env_keys (env_text);
             foreach (unowned string key in Utils.env_keys (env_addition)) {
