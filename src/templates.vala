@@ -62,7 +62,7 @@ namespace DockStation {
             for (int i = 0; i < paths.length; i++) {
                 var file = dir.resolve_relative_path (paths[i]);
                 ensure_directory (file.get_parent ());
-                var text = substitute (contents[i], vars);
+                var text = ServiceTemplate.substitute (contents[i], vars);
                 file.replace_contents (text.data, null, false, FileCreateFlags.NONE, null);
             }
         }
@@ -72,14 +72,6 @@ namespace DockStation {
                 dir.make_directory_with_parents ();
             } catch (IOError.EXISTS e) {
             }
-        }
-
-        private static string substitute (string text, HashTable<string, string> vars) {
-            var result = text;
-            vars.foreach ((key, value) => {
-                result = result.replace ("{{" + key + "}}", value);
-            });
-            return result;
         }
     }
 

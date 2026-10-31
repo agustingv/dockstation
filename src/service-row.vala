@@ -59,11 +59,7 @@ namespace DockStation {
             status_icon = new Gtk.Image.from_icon_name ("media-record-symbolic");
             add_prefix (status_icon);
 
-            open_button = new Gtk.Button.from_icon_name ("web-browser-symbolic") {
-                tooltip_text = _("Open in Browser"),
-                valign = Gtk.Align.CENTER,
-            };
-            open_button.add_css_class ("flat");
+            open_button = Utils.flat_icon_button ("web-browser-symbolic", _("Open in Browser"));
             open_button.clicked.connect (on_open_clicked);
             add_suffix (open_button);
 
@@ -159,11 +155,7 @@ namespace DockStation {
         }
 
         private Gtk.Button add_button (string icon, string tooltip, string action) {
-            var button = new Gtk.Button.from_icon_name (icon) {
-                tooltip_text = tooltip,
-                valign = Gtk.Align.CENTER,
-            };
-            button.add_css_class ("flat");
+            var button = Utils.flat_icon_button (icon, tooltip);
             button.clicked.connect (() => {
                 if (action == "toggle") {
                     action_requested (running ? "stop" : "start");

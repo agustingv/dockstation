@@ -138,46 +138,5 @@ namespace DockStation {
             }
             return routes;
         }
-
-        /*
-         * Inspects containers (by full or short ID) and returns their Traefik
-         * routes, keyed by the IDs as given. Containers without routes are left out.
-         */
-        public async HashTable<string, GenericArray<TraefikRoute>> inspect (string[] container_ids, Cancellable? cancellable)
-                throws Error {
-            var result = new HashTable<string, GenericArray<TraefikRoute>> (str_hash, str_equal);
-            if (container_ids.length == 0) {
-                return result;
-            }
-            string[] args = {
-                "inspect", "--type", "container", "--format",
-                "C\t{{.Id}}\n{{range $k, $v := .Config.Labels}}L\t{{$k}}\t{{$v}}\n{{end}}"
-            };
-            foreach (unowned string id in container_ids) {
-                args += id;
-            }
-            var output = yield Docker.run (null, args, cancellable);
-
-            string? current = null;
-            var labels = new HashTable<string, string> (str_hash, str_equal);
-            foreach (unowned string line in (output.stdout_text + "C\n").split ("\n")) {
-                var f = line.split ("\t", 3);
-                if (f[0] == "C") {
-                    if (current != null) {
-                        var routes = routes_from_labels (labels);
-                        foreach (unowned string id in container_ids) {
-                            if (routes.length > 0 && current.has_prefix (id)) {
-                                result[id] = routes;
-                            }
-                        }
-                    }
-                    current = f.length > 1 ? f[1] : null;
-                    labels = new HashTable<string, string> (str_hash, str_equal);
-                } else if (f[0] == "L" && f.length == 3 && f[1].has_prefix ("traefik.")) {
-                    labels[f[1]] = f[2];
-                }
-            }
-            return result;
-        }
     }
 }

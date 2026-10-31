@@ -63,12 +63,8 @@ namespace DockStation {
         }
 
         private Gtk.Widget build_ui () {
-            var folder_button = new Gtk.Button.from_icon_name ("folder-open-symbolic") {
-                action_name = "project.open-folder",
-                tooltip_text = _("Open Folder"),
-                valign = Gtk.Align.CENTER,
-            };
-            folder_button.add_css_class ("flat");
+            var folder_button = Utils.flat_icon_button ("folder-open-symbolic", _("Open Folder"));
+            folder_button.action_name = "project.open-folder";
 
             var location_row = new Adw.ActionRow () {
                 title = _("Location"),
@@ -86,19 +82,11 @@ namespace DockStation {
             info_group.add (location_row);
             info_group.add (status_row);
 
-            var refresh_button = new Gtk.Button.from_icon_name ("view-refresh-symbolic") {
-                tooltip_text = _("Refresh"),
-                valign = Gtk.Align.CENTER,
-            };
-            refresh_button.add_css_class ("flat");
+            var refresh_button = Utils.flat_icon_button ("view-refresh-symbolic", _("Refresh"));
             refresh_button.clicked.connect (() => reload_requested ());
 
-            var add_button = new Gtk.Button.from_icon_name ("list-add-symbolic") {
-                action_name = "project.add-service",
-                tooltip_text = _("Add Service…"),
-                valign = Gtk.Align.CENTER,
-            };
-            add_button.add_css_class ("flat");
+            var add_button = Utils.flat_icon_button ("list-add-symbolic", _("Add Service…"));
+            add_button.action_name = "project.add-service";
 
             var header_buttons = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
             header_buttons.append (add_button);
@@ -160,12 +148,7 @@ namespace DockStation {
                 }
 
                 if (containers == null) {
-                    var ps = yield Docker.run (null, {
-                        "ps", "--all",
-                        "--filter", "label=com.docker.compose.project.working_dir=" + project.path,
-                        "--format", Docker.COMPOSE_PS_FORMAT,
-                    }, cancellable);
-                    containers = ps.success ? ComposeContainer.parse (ps.stdout_text) : new GenericArray<ComposeContainer> ();
+                    containers = yield own_containers ();
                 }
                 foreach (var container in containers) {
                     if (container.working_dir != project.path) {
@@ -196,6 +179,15 @@ namespace DockStation {
             }
         }
 
+        /* Docker reporting an error is not this page's to show: the window's banner does. */
+        private async GenericArray<ComposeContainer> own_containers () throws Error {
+            try {
+                return yield Docker.compose_containers (project.path, cancellable);
+            } catch (IOError.FAILED e) {
+                return new GenericArray<ComposeContainer> ();
+            }
+        }
+
         /*
          * Reads what DockStation needs from the containers themselves: databases
          * with init scripts (see DatabaseInit) and Traefik routes (see Traefik).
@@ -213,8 +205,21 @@ namespace DockStation {
                 return;
             }
             try {
-                databases = yield DatabaseInit.inspect (ids, cancellable);
-                traefik_routes = yield Traefik.inspect (ids, cancellable);
+                var details = yield ContainerDetails.inspect (ids, cancellable);
+                var found_databases = new HashTable<string, DatabaseInit> (str_hash, str_equal);
+                var found_routes = new HashTable<string, GenericArray<TraefikRoute>> (str_hash, str_equal);
+                details.foreach ((id, container) => {
+                    var database = DatabaseInit.from_container (container);
+                    if (database != null) {
+                        found_databases[id] = database;
+                    }
+                    var routes = Traefik.routes_from_labels (container.labels);
+                    if (routes.length > 0) {
+                        found_routes[id] = routes;
+                    }
+                });
+                databases = found_databases;
+                traefik_routes = found_routes;
                 inspected_containers = key;
             } catch (Error e) {
                 // Not critical: the reset and link buttons just stay hidden.

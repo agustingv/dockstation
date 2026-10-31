@@ -38,18 +38,10 @@ namespace DockStation {
          */
         public async GenericArray<ComposeContainer>? check () {
             try {
-                var result = yield Docker.run (null, {
-                    "ps", "--all",
-                    "--filter", "label=com.docker.compose.project",
-                    "--format", Docker.COMPOSE_PS_FORMAT,
-                });
-                if (result.success) {
-                    error = null;
-                    var containers = ComposeContainer.parse (result.stdout_text);
-                    update_projects (containers);
-                    return containers;
-                }
-                fail (result.stderr_text);
+                var containers = yield Docker.compose_containers (null);
+                error = null;
+                update_projects (containers);
+                return containers;
             } catch (Error e) {
                 fail (e.message);
             }

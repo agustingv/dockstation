@@ -186,16 +186,8 @@ namespace DockStation {
                 collect_files (files, files, paths, contents);
             } catch (IOError.NOT_FOUND e) {
             }
-            if (paths.length > 0) {
-                string[] path_array = {};
-                string[] content_array = {};
-                for (uint i = 0; i < paths.length; i++) {
-                    path_array += paths[i];
-                    content_array += contents[i];
-                }
-                template.file_paths = path_array;
-                template.file_contents = content_array;
-            }
+            template.file_paths = Utils.to_array (paths);
+            template.file_contents = Utils.to_array (contents);
             return template;
         }
 
@@ -299,11 +291,7 @@ namespace DockStation {
             var found_problems = new GenericArray<string> ();
             load_dir (File.new_for_uri (RESOURCE_DIR), by_id, found_problems);
             load_dir (File.new_for_path (user_dir ()), by_id, found_problems);
-            string[] problem_array = {};
-            foreach (unowned string problem in found_problems) {
-                problem_array += problem;
-            }
-            problems = problem_array;
+            problems = Utils.to_array (found_problems);
 
             var sorted = new GenericArray<ServiceTemplate> ();
             by_id.foreach ((id, template) => sorted.add (template));
