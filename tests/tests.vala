@@ -313,6 +313,41 @@ private void docker_tests () {
         eq_list (Docker.folderless_args_for ("/p", { "down", "--volumes", "--rmi", "local" }, containers),
                  { "rm", "--force", "--volumes", "id-db", "id-cache" });
         eq_list (Docker.folderless_args_for ("/gone", { "down" }, containers), {});
+        eq_list (Docker.folderless_args_for ("/p", { "something-else" }, containers), {});
+        eq_list (Docker.folderless_args_for ("/p", {}, containers), {});
+    });
+    // The array must outlive the caller: with `.begin` and a literal, it is freed at the first
+    // yield, and the tray's Stop once ran `docker rm --force` on the containers because of that.
+    Test.add_func ("/docker/folderless-args-keeps-its-arguments", () => {
+        try {
+            var bin = temp_project ();
+            var docker = Path.build_filename (bin, "docker");
+            FileUtils.set_contents (docker, "#!/bin/sh\nprintf '/p\\tdb\\tFalse\\trunning\\tUp\\t\\tid-db\\n'\n");
+            FileUtils.chmod (docker, 0755);
+            var old_path = Environment.get_variable ("PATH");
+            Environment.set_variable ("PATH", bin + ":" + old_path, true);
+
+            string[]? result = null;
+            var loop = new MainLoop ();
+            Docker.folderless_args.begin ("/p", { "stop" }, null, (obj, res) => {
+                try {
+                    result = Docker.folderless_args.end (res);
+                } catch (Error e) {
+                    error ("%s", e.message);
+                }
+                loop.quit ();
+            });
+            // Whatever reuses the memory of a freed array must not change the outcome.
+            string[] noise = { "rm", "rm", "rm", "rm" };
+            loop.run ();
+            assert (noise.length == 4);
+
+            Environment.set_variable ("PATH", old_path, true);
+            Process.spawn_command_line_sync ("rm -rf " + Shell.quote (bin));
+            eq_list (result, { "stop", "id-db" });
+        } catch (Error e) {
+            error ("%s", e.message);
+        }
     });
     Test.add_func ("/docker/mount-type", () => {
         assert (MountType.parse ("volume") == MountType.VOLUME);

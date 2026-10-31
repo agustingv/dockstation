@@ -147,7 +147,7 @@ namespace DockStation {
          * whose folder is gone. Only stopping and removing containers is possible without the
          * files: returns null for other commands, and an empty array when there is nothing to do.
          */
-        public async string[]? folderless_args (string working_dir, string[] args, Cancellable? cancellable = null) throws Error {
+        public async string[]? folderless_args (string working_dir, owned string[] args, Cancellable? cancellable = null) throws Error {
             if (args.length == 0 || !(args[0] in FOLDERLESS_COMMANDS)) {
                 return null;
             }
@@ -157,6 +157,10 @@ namespace DockStation {
 
         /* See folderless_args (). Containers are found by folder, not by project name, which other folders may share. */
         public string[] folderless_args_for (string working_dir, string[] args, GenericArray<ComposeContainer> containers) {
+            // This deletes containers: anything but a known command must do nothing.
+            if (args.length == 0 || !(args[0] in FOLDERLESS_COMMANDS)) {
+                return {};
+            }
             string[] services = {};
             bool volumes = false;
             for (int i = 1; i < args.length; i++) {

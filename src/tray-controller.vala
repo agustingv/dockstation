@@ -93,7 +93,7 @@ namespace DockStation {
          * Runs a compose command for a project that may not be open, with the window possibly
          * hidden: failures are reported with a desktop notification instead of a toast.
          */
-        private async void run_command (Project project, string[] args, string busy_label, string failure) {
+        private async void run_command (Project project, owned string[] args, string busy_label, string failure) {
             if (busy_projects.contains (project.path)) {
                 return;
             }
