@@ -27,6 +27,11 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.1.7" date="2026-10-31">
+      <description>
+        <p>Internal improvements to how container states and actions are handled.</p>
+      </description>
+    </release>
     <release version="0.1.6" date="2026-10-31">
       <description>
         <p>Internal improvements, with tests for resetting databases and removing services.</p>

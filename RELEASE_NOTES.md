@@ -1,3 +1,11 @@
+## DockStation v0.1.7
+
+### Changes
+- A container state DockStation does not recognize now reads "unknown" in its tooltip, instead of Docker's name for it.
+
+### Internal
+- Container states, service and tray actions, mount types and Docker usage types are now enums instead of strings, so the compiler catches typos and unhandled cases.
+
 ## DockStation v0.1.6
 
 ### Changes
