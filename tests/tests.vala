@@ -25,6 +25,28 @@ private HashTable<string, string> table (string[] pairs) {
     return result;
 }
 
+private string[] compose_files_of (Project project) {
+    string[] result = {};
+    var loop = new MainLoop ();
+    project.compose_files.begin ((obj, res) => {
+        result = project.compose_files.end (res);
+        loop.quit ();
+    });
+    loop.run ();
+    return result;
+}
+
+private string[] added_services_of (Project project) {
+    string[] result = {};
+    var loop = new MainLoop ();
+    ServiceRemover.added_services.begin (project, (obj, res) => {
+        result = ServiceRemover.added_services.end (res);
+        loop.quit ();
+    });
+    loop.run ();
+    return result;
+}
+
 private GenericArray<TraefikRoute> routes (string[] pairs) {
     return Traefik.routes_from_labels (table (pairs));
 }
@@ -122,7 +144,7 @@ private void env_tests () {
             var dir = temp_project ();
             var env = Path.build_filename (dir, ".env");
             FileUtils.set_contents (env, "# COMPOSE_FILE=ignored.yaml\nexport COMPOSE_PATH_SEPARATOR=;\nCOMPOSE_FILE=\"a.yaml;/abs/b.yaml\"\n");
-            eq_list (new Project ("p", dir).compose_files (), { dir + "/a.yaml", "/abs/b.yaml" });
+            eq_list (compose_files_of (new Project ("p", dir)), { dir + "/a.yaml", "/abs/b.yaml" });
             FileUtils.unlink (env);
             DirUtils.remove (dir);
         } catch (Error e) {
@@ -738,7 +760,7 @@ private void added_services_tests () {
                                     + "  - compose.missing.yaml\n  - other.yaml\n");
             FileUtils.set_contents (db, "");
             FileUtils.set_contents (web, "");
-            eq_list (ServiceRemover.added_services (new Project ("p", dir)), { "db", "web-1" });
+            eq_list (added_services_of (new Project ("p", dir)), { "db", "web-1" });
             foreach (unowned string file in new string[] { main, db, web }) {
                 FileUtils.unlink (file);
             }

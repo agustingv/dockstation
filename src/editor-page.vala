@@ -550,7 +550,7 @@ namespace DockStation {
         }
 
         private async void validate (bool after_save) {
-            var overlay = new ComposeOverlay (project.compose_files ());
+            var overlay = new ComposeOverlay (yield project.compose_files ());
             try {
                 // Check the text in the editor, not the file on disk: Compose gets a copy of it instead.
                 if (dirty && file_at (current_file_index).kind == EditorFileKind.COMPOSE) {

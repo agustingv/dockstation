@@ -15,6 +15,7 @@ namespace DockStation {
         private bool busy = false;
 
         private Adw.ViewStack stack;
+        private bool opening_add_service = false;
         private Adw.ViewStackPage output_stack_page;
         private Adw.Spinner spinner;
         private Adw.Banner folder_banner;
@@ -278,7 +279,14 @@ namespace DockStation {
         }
 
         private async void show_add_service () {
-            if (project.compose_files ().length == 0) {
+            // Reading the files takes a moment: a double click must not open two dialogs.
+            if (opening_add_service) {
+                return;
+            }
+            opening_add_service = true;
+            var files = yield project.compose_files ();
+            opening_add_service = false;
+            if (files.length == 0) {
                 toast (_("No compose file found in %s").printf (Utils.home_relative (project.path)));
                 return;
             }
