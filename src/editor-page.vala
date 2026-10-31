@@ -95,8 +95,8 @@ namespace DockStation {
         private string? editing_path = null;
         // Identifies the version on disk that was loaded, to detect changes made by other programs.
         private string? editing_etag = null;
-        private bool loading_file = false;
-        private bool switching_file = false;
+        private ulong buffer_changed_handler;
+        private ulong file_selected_handler;
         private bool dirty = false;
         private bool saving = false;
         // Bumped on every edit, so a save only clears `dirty` if nothing was typed meanwhile.
@@ -187,7 +187,7 @@ namespace DockStation {
                 header_factory = header_factory,
                 tooltip_text = _("File"),
             };
-            file_dropdown.notify["selected"].connect (on_file_selected);
+            file_selected_handler = file_dropdown.notify["selected"].connect (on_file_selected);
 
             var validate_button = new Gtk.Button.with_label (_("Validate")) {
                 action_name = "editor.validate",
@@ -215,11 +215,9 @@ namespace DockStation {
             editor_banner = new Adw.Banner ("") { use_markup = false };
 
             editor_buffer = new GtkSource.Buffer (null);
-            editor_buffer.changed.connect (() => {
-                if (!loading_file) {
-                    edit_serial++;
-                    set_dirty (true);
-                }
+            buffer_changed_handler = editor_buffer.changed.connect (() => {
+                edit_serial++;
+                set_dirty (true);
             });
 
             update_editor_scheme ();
@@ -274,10 +272,10 @@ namespace DockStation {
             foreach (unowned string path in project.editable_files ()) {
                 files += new EditorFile (path, EditorFileKind.COMPOSE);
             }
-            switching_file = true;
-            file_store.splice (0, file_store.get_n_items (), files);
-            file_dropdown.selected = 0;
-            switching_file = false;
+            Utils.without_handler (file_dropdown, file_selected_handler, () => {
+                file_store.splice (0, file_store.get_n_items (), files);
+                file_dropdown.selected = 0;
+            });
             load_file_at (0);
             rescan_dockerfiles.begin ();
         }
@@ -323,14 +321,14 @@ namespace DockStation {
             foreach (unowned string path in paths) {
                 items += new EditorFile (path, EditorFileKind.DOCKERFILE);
             }
-            switching_file = true;
-            file_store.splice (first, file_store.get_n_items () - first, items);
-            var position = position_of (editing);
-            if (position != Gtk.INVALID_LIST_POSITION) {
-                current_file_index = position;
-                file_dropdown.selected = position;
-            }
-            switching_file = false;
+            Utils.without_handler (file_dropdown, file_selected_handler, () => {
+                file_store.splice (first, file_store.get_n_items () - first, items);
+                var position = position_of (editing);
+                if (position != Gtk.INVALID_LIST_POSITION) {
+                    current_file_index = position;
+                    file_dropdown.selected = position;
+                }
+            });
         }
 
         private void set_dirty (bool value) {
@@ -355,11 +353,11 @@ namespace DockStation {
                 toast (e.message);
             }
 
-            loading_file = true;
-            editor_buffer.begin_irreversible_action ();
-            editor_buffer.text = contents.length > 0 ? (string) contents : "";
-            editor_buffer.end_irreversible_action ();
-            loading_file = false;
+            Utils.without_handler (editor_buffer, buffer_changed_handler, () => {
+                editor_buffer.begin_irreversible_action ();
+                editor_buffer.text = contents.length > 0 ? (string) contents : "";
+                editor_buffer.end_irreversible_action ();
+            });
 
             Gtk.TextIter start;
             editor_buffer.get_start_iter (out start);
@@ -392,7 +390,7 @@ namespace DockStation {
         }
 
         private void on_file_selected () {
-            if (switching_file || file_dropdown.selected == current_file_index) {
+            if (file_dropdown.selected == current_file_index) {
                 return;
             }
             if (!dirty) {
@@ -405,9 +403,7 @@ namespace DockStation {
 
         private async void ask_save_before_switch (uint target) {
             if (!(yield settle_unsaved_changes ())) {
-                switching_file = true;
                 file_dropdown.selected = current_file_index;
-                switching_file = false;
                 return;
             }
             load_file_at (target);

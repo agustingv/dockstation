@@ -36,6 +36,15 @@ namespace DockStation.Utils {
         widget.add_css_class (css_class);
     }
 
+    public delegate void Change ();
+
+    /* Makes a change from code that `handler`, connected to `source`, must not react to. */
+    public void without_handler (Object source, ulong handler, Change change) {
+        SignalHandler.block (source, handler);
+        change ();
+        SignalHandler.unblock (source, handler);
+    }
+
     /* Turns a human project name into a folder / compose project name. */
     public string slugify (string text) {
         var normalized = text.normalize (-1, NormalizeMode.NFD).down ();

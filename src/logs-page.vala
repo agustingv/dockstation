@@ -11,7 +11,7 @@ namespace DockStation {
         private Gtk.DropDown logs_service_dropdown;
         private Gtk.ToggleButton timestamps_toggle;
         private Cancellable? logs_cancellable = null;
-        private bool updating_logs_model = false;
+        private ulong service_selected_handler;
 
         public LogsPage (Project project) {
             Object (project: project);
@@ -24,11 +24,7 @@ namespace DockStation {
         private Gtk.Widget build_ui () {
             logs_services_model = new Gtk.StringList ({ _("All Services") });
             logs_service_dropdown = new Gtk.DropDown (logs_services_model, null) { tooltip_text = _("Service") };
-            logs_service_dropdown.notify["selected"].connect (() => {
-                if (!updating_logs_model) {
-                    restart ();
-                }
-            });
+            service_selected_handler = logs_service_dropdown.notify["selected"].connect (() => restart ());
 
             timestamps_toggle = new Gtk.ToggleButton () {
                 icon_name = "preferences-system-time-symbolic",
@@ -67,16 +63,16 @@ namespace DockStation {
                 selected = logs_services_model.get_string (logs_service_dropdown.selected);
             }
 
-            updating_logs_model = true;
-            logs_services_model.splice (1, logs_services_model.get_n_items () - 1, service_names);
             uint position = 0;
             for (int i = 0; i < service_names.length; i++) {
                 if (service_names[i] == selected) {
                     position = i + 1;
                 }
             }
-            logs_service_dropdown.selected = position;
-            updating_logs_model = false;
+            Utils.without_handler (logs_service_dropdown, service_selected_handler, () => {
+                logs_services_model.splice (1, logs_services_model.get_n_items () - 1, service_names);
+                logs_service_dropdown.selected = position;
+            });
         }
 
         /* Follows the logs of one service. */
@@ -87,9 +83,9 @@ namespace DockStation {
                     position = i;
                 }
             }
-            updating_logs_model = true;
-            logs_service_dropdown.selected = position;
-            updating_logs_model = false;
+            Utils.without_handler (logs_service_dropdown, service_selected_handler, () => {
+                logs_service_dropdown.selected = position;
+            });
 
             restart ();
         }
