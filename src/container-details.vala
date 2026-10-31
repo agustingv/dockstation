@@ -1,6 +1,20 @@
 namespace DockStation {
+    public enum MountType {
+        OTHER,
+        VOLUME,
+        BIND;
+
+        public static MountType parse (string name) {
+            switch (name) {
+                case "volume": return VOLUME;
+                case "bind": return BIND;
+                default: return OTHER;
+            }
+        }
+    }
+
     public class ContainerMount {
-        public string mount_type;   // "volume" or "bind", among others
+        public MountType mount_type;
         public string name;         // The volume's name; empty for bind mounts
         public string source;
         public string destination;
@@ -56,7 +70,7 @@ namespace DockStation {
                     containers.add (current);
                 } else if (current != null && f[0] == "M" && f.length >= 5) {
                     var mount = new ContainerMount ();
-                    mount.mount_type = f[1];
+                    mount.mount_type = MountType.parse (f[1]);
                     mount.name = f[2] == "<no value>" ? "" : f[2];
                     mount.source = f[3];
                     mount.destination = f[4];

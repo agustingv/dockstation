@@ -461,33 +461,33 @@ namespace DockStation {
             yield services.refresh (reload_config, containers);
         }
 
-        private void on_service_action (ServiceRow row, string action) {
+        private void on_service_action (ServiceRow row, ServiceAction action) {
             var service = row.service;
             switch (action) {
-                case "start":
+                case ServiceAction.START:
                     run_compose.begin ({ "up", "--detach", service },
                                        _("Service “%s” started").printf (service),
                                        _("Could not start “%s”").printf (service));
                     break;
-                case "stop":
+                case ServiceAction.STOP:
                     run_compose.begin ({ "stop", service },
                                        _("Service “%s” stopped").printf (service),
                                        _("Could not stop “%s”").printf (service));
                     break;
-                case "restart":
+                case ServiceAction.RESTART:
                     run_compose.begin ({ "restart", service },
                                        _("Service “%s” restarted").printf (service),
                                        _("Could not restart “%s”").printf (service));
                     break;
-                case "logs":
+                case ServiceAction.SHOW_LOGS:
                     show_logs_for (service);
                     break;
-                case "reset-database":
+                case ServiceAction.RESET_DATABASE:
                     if (row.database != null) {
                         reset_database.begin (service, row.database);
                     }
                     break;
-                case "remove-service":
+                case ServiceAction.REMOVE:
                     remove_service.begin (service);
                     break;
             }

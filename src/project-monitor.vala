@@ -53,7 +53,7 @@ namespace DockStation {
             var total = new HashTable<string, int> (str_hash, str_equal);
             foreach (var container in containers) {
                 total[container.working_dir] = total[container.working_dir] + 1;
-                if (container.state == "running") {
+                if (container.state == ContainerState.RUNNING) {
                     running[container.working_dir] = running[container.working_dir] + 1;
                 }
             }

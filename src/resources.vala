@@ -3,7 +3,7 @@ namespace DockStation {
         public string id;
         public string name;
         public string image;
-        public string state;
+        public ContainerState state;
         public string status;
         public string project;
         public string service;
@@ -50,6 +50,23 @@ namespace DockStation {
         public int64 size;          // -1 when Docker cannot tell (non-local drivers).
     }
 
+    /* The lines of `docker system df`. */
+    public enum UsageType {
+        CONTAINERS,
+        IMAGES,
+        VOLUMES,
+        BUILD_CACHE;
+
+        public string docker_name () {
+            switch (this) {
+                case CONTAINERS: return "Containers";
+                case IMAGES: return "Images";
+                case VOLUMES: return "Local Volumes";
+                default: return "Build Cache";
+            }
+        }
+    }
+
     /* One line of `docker system df`: totals that count shared layers once. */
     public class UsageSummary : Object {
         public int total;
@@ -80,8 +97,12 @@ namespace DockStation {
         public GenericArray<ContainerResource> containers = new GenericArray<ContainerResource> ();
         public GenericArray<ImageResource> images = new GenericArray<ImageResource> ();
         public GenericArray<VolumeResource> volumes = new GenericArray<VolumeResource> ();
-        /* Keyed by Docker's type names: "Images", "Containers", "Local Volumes", "Build Cache". */
-        public HashTable<string, UsageSummary> summaries = new HashTable<string, UsageSummary> (str_hash, str_equal);
+        // Keyed by UsageType.docker_name (), as Docker prints it.
+        private HashTable<string, UsageSummary> summaries = new HashTable<string, UsageSummary> (str_hash, str_equal);
+
+        public UsageSummary? summary (UsageType type) {
+            return summaries[type.docker_name ()];
+        }
 
         public static async DockerResources load (Cancellable? cancellable = null) throws Error {
             var resources = new DockerResources ();
@@ -129,7 +150,7 @@ namespace DockStation {
                     c.id = f[1];
                     c.name = f[2];
                     c.image = f[3];
-                    c.state = f[4];
+                    c.state = ContainerState.parse (f[4]);
                     c.status = f[5];
                     c.size = Utils.parse_size (f[6]);
                     c.project = f[7];

@@ -12,10 +12,10 @@ namespace DockStation {
         public string image_id;
         public string engine;
 
-        /* Where the data lives: a volume ("volume") or a host folder ("bind"). */
-        public string data_type;
-        public string data_volume;        // Volume name, for "volume"
-        public string data_source;        // Host folder, for "bind"
+        /* Where the data lives: a volume or a host folder. */
+        public MountType data_type;
+        public string data_volume;        // Volume name, for a volume
+        public string data_source;        // Host folder, for a bind mount
         public string data_destination;
 
         private string[] script_files = {};
@@ -32,7 +32,7 @@ namespace DockStation {
         }
 
         public bool data_is_anonymous_volume {
-            get { return data_type == "volume" && is_anonymous_volume_name (data_volume); }
+            get { return data_type == MountType.VOLUME && is_anonymous_volume_name (data_volume); }
         }
 
         private static bool is_anonymous_volume_name (string name) {
@@ -72,8 +72,8 @@ namespace DockStation {
             return false;
         }
 
-        private void add_init_mount (string type, string name, string source) {
-            if (type == "bind") {
+        private void add_init_mount (MountType type, string name, string source) {
+            if (type == MountType.BIND) {
                 if (FileUtils.test (source, FileTest.IS_DIR)) {
                     try {
                         var dir = Dir.open (source);
@@ -95,7 +95,7 @@ namespace DockStation {
                 } else if (is_init_script (source)) {
                     script_files += source;
                 }
-            } else if (type == "volume" && name != "") {
+            } else if (type == MountType.VOLUME && name != "") {
                 script_volumes += name;
             }
         }
@@ -117,7 +117,7 @@ namespace DockStation {
                     continue;
                 }
                 var detected = destination == pgdata ? "PostgreSQL" : engine_for_data_dir (destination);
-                if (detected != null && (mount.mount_type == "volume" || mount.mount_type == "bind")) {
+                if (detected != null && (mount.mount_type == MountType.VOLUME || mount.mount_type == MountType.BIND)) {
                     database.engine = detected;
                     database.data_type = mount.mount_type;
                     database.data_volume = mount.name;

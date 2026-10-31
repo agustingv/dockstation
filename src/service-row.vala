@@ -3,20 +3,20 @@ namespace DockStation {
     public class ServiceInfo : Object {
         public int containers = 0;
         public int running = 0;
-        public string state = "";
+        public ContainerState state = ContainerState.UNKNOWN;
         public string status = "";
         public string ports = "";
         public string container_id = "";   // First container; replicas are not resettable one by one.
 
-        public void add_container (string id, string state, string status, string ports) {
+        public void add_container (string id, ContainerState state, string status, string ports) {
             containers++;
             if (containers == 1) {
                 container_id = id;
             }
-            if (state == "running") {
+            if (state == ContainerState.RUNNING) {
                 running++;
             }
-            if (containers == 1 || state == "running") {
+            if (containers == 1 || state == ContainerState.RUNNING) {
                 this.state = state;
                 this.status = status;
             }
@@ -26,11 +26,21 @@ namespace DockStation {
         }
     }
 
+    /* What a service's row asks the view to do. */
+    public enum ServiceAction {
+        START,
+        STOP,
+        RESTART,
+        SHOW_LOGS,
+        RESET_DATABASE,
+        REMOVE,
+    }
+
     public class ServiceRow : Adw.ActionRow {
         public string service { get; construct; }
         public int host_port { get; private set; default = 0; }
 
-        public signal void action_requested (string action);
+        public signal void action_requested (ServiceAction action);
         public signal void open_url (string url);
 
         private Gtk.Image status_icon;
@@ -66,12 +76,14 @@ namespace DockStation {
             links_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
             links_popover = new Gtk.Popover () { child = links_box };
             links_popover.set_parent (open_button);
-            toggle_button = add_button ("media-playback-start-symbolic", _("Start"), "toggle");
-            restart_button = add_button ("system-reboot-symbolic", _("Restart"), "restart");
-            reset_button = add_button ("document-revert-symbolic", _("Reset Database from Init Scripts"), "reset-database");
+            toggle_button = Utils.flat_icon_button ("media-playback-start-symbolic", _("Start"));
+            toggle_button.clicked.connect (() => action_requested (running ? ServiceAction.STOP : ServiceAction.START));
+            add_suffix (toggle_button);
+            restart_button = add_button ("system-reboot-symbolic", _("Restart"), ServiceAction.RESTART);
+            reset_button = add_button ("document-revert-symbolic", _("Reset Database from Init Scripts"), ServiceAction.RESET_DATABASE);
             reset_button.visible = false;
-            add_button ("utilities-terminal-symbolic", _("Show Logs"), "logs");
-            remove_button = add_button ("user-trash-symbolic", _("Remove Service…"), "remove-service");
+            add_button ("utilities-terminal-symbolic", _("Show Logs"), ServiceAction.SHOW_LOGS);
+            remove_button = add_button ("user-trash-symbolic", _("Remove Service…"), ServiceAction.REMOVE);
             remove_button.visible = false;
         }
 
@@ -154,15 +166,9 @@ namespace DockStation {
             remove_button.visible = removable;
         }
 
-        private Gtk.Button add_button (string icon, string tooltip, string action) {
+        private Gtk.Button add_button (string icon, string tooltip, ServiceAction action) {
             var button = Utils.flat_icon_button (icon, tooltip);
-            button.clicked.connect (() => {
-                if (action == "toggle") {
-                    action_requested (running ? "stop" : "start");
-                } else {
-                    action_requested (action);
-                }
-            });
+            button.clicked.connect (() => action_requested (action));
             add_suffix (button);
             return button;
         }
@@ -199,8 +205,8 @@ namespace DockStation {
             }
             subtitle = text;
 
-            Utils.set_state_class (status_icon, info.containers == 0 ? "dim-label" : Utils.container_state_class (info.state));
-            status_icon.tooltip_text = info.containers == 0 ? _("Not created") : info.state;
+            Utils.set_state_class (status_icon, info.containers == 0 ? "dim-label" : info.state.to_css_class ());
+            status_icon.tooltip_text = info.containers == 0 ? _("Not created") : info.state.docker_name ();
 
             host_port = Utils.first_host_port (info.ports);
             var available = links ();

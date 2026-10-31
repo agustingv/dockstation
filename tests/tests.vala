@@ -239,6 +239,28 @@ private void utils_tests () {
 }
 
 private void docker_tests () {
+    Test.add_func ("/docker/container-state", () => {
+        foreach (unowned string name in new string[] { "created", "running", "restarting", "paused", "removing", "exited", "dead" }) {
+            eq (ContainerState.parse (name).docker_name (), name);
+        }
+        assert (ContainerState.parse ("something-new") == ContainerState.UNKNOWN);
+        eq (ContainerState.RUNNING.to_css_class (), "success");
+        eq (ContainerState.PAUSED.to_css_class (), "warning");
+        eq (ContainerState.DEAD.to_css_class (), "error");
+        eq (ContainerState.EXITED.to_css_class (), "dim-label");
+        eq (ContainerState.UNKNOWN.to_css_class (), "dim-label");
+    });
+    Test.add_func ("/docker/mount-type", () => {
+        assert (MountType.parse ("volume") == MountType.VOLUME);
+        assert (MountType.parse ("bind") == MountType.BIND);
+        assert (MountType.parse ("tmpfs") == MountType.OTHER);
+    });
+    Test.add_func ("/docker/usage-type-names", () => {
+        eq (UsageType.CONTAINERS.docker_name (), "Containers");
+        eq (UsageType.IMAGES.docker_name (), "Images");
+        eq (UsageType.VOLUMES.docker_name (), "Local Volumes");
+        eq (UsageType.BUILD_CACHE.docker_name (), "Build Cache");
+    });
     Test.add_func ("/docker/parse-containers", () => {
         var containers = ComposeContainer.parse (
             "/p\tweb\tFalse\trunning\tUp 2 hours\t0.0.0.0:80->80/tcp\tabc\n"
@@ -248,7 +270,7 @@ private void docker_tests () {
         eq_int (containers.length, 2);
         eq (containers[0].working_dir, "/p");
         eq (containers[0].service, "web");
-        eq (containers[0].state, "running");
+        assert (containers[0].state == ContainerState.RUNNING);
         eq (containers[0].id, "abc");
         eq (containers[1].service, "db");
     });
@@ -300,7 +322,7 @@ private void inspect_tests () {
             assert (database != null);
             eq (database.engine, "PostgreSQL");
             eq (database.image_id, "img");
-            eq (database.data_type, "volume");
+            assert (database.data_type == MountType.VOLUME);
             eq (database.data_volume, "data");
             eq_list (database.init_files, { script });
 
@@ -346,14 +368,14 @@ private DatabaseInit database_in_volume (string volume = "blog_db-data") {
     var database = new DatabaseInit ();
     database.image_id = "sha256:img";
     database.engine = "PostgreSQL";
-    database.data_type = "volume";
+    database.data_type = MountType.VOLUME;
     database.data_volume = volume;
     return database;
 }
 
 private DatabaseInit database_in_folder (string folder) {
     var database = database_in_volume ("");
-    database.data_type = "bind";
+    database.data_type = MountType.BIND;
     database.data_source = folder;
     return database;
 }

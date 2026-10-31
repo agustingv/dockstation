@@ -86,17 +86,28 @@ namespace DockStation {
         }
     }
 
+    /* What an entry of the tray menu does; TrayController acts on it. */
+    public enum TrayAction {
+        NONE,
+        OPEN,
+        QUIT,
+        OPEN_PROJECT,
+        START,
+        STOP,
+        RESTART,
+    }
+
     /* An entry of the tray menu. Separators have no label; `action` tells the owner what to do. */
     public class TrayMenuItem {
         public int id;
         public string label;
         public bool enabled = true;
         public bool is_separator = false;
-        public string action = "";
+        public TrayAction action = TrayAction.NONE;
         public Object? target = null;
         public TrayMenuItem[] children = {};
 
-        public TrayMenuItem (string label, string action = "", Object? target = null) {
+        public TrayMenuItem (string label, TrayAction action = TrayAction.NONE, Object? target = null) {
             this.label = label;
             this.action = action;
             this.target = target;

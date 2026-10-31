@@ -313,9 +313,9 @@ namespace DockStation {
             return page;
         }
 
-        private Adw.PreferencesGroup summary_group (string docker_type, string description) {
+        private Adw.PreferencesGroup summary_group (UsageType type, string description) {
             var group = new Adw.PreferencesGroup () { description = description };
-            var summary = data.summaries[docker_type];
+            var summary = data.summary (type);
             if (summary == null) {
                 return group;
             }
@@ -325,8 +325,8 @@ namespace DockStation {
             return group;
         }
 
-        private string reclaimable (string docker_type) {
-            var summary = data.summaries[docker_type];
+        private string reclaimable (UsageType type) {
+            var summary = data.summary (type);
             return summary != null ? summary.reclaimable : _("unknown");
         }
 
@@ -343,7 +343,8 @@ namespace DockStation {
 
         /* Containers `docker container prune` removes. */
         private static bool is_stopped (ContainerResource container) {
-            return container.state == "exited" || container.state == "created" || container.state == "dead";
+            return container.state == ContainerState.EXITED || container.state == ContainerState.CREATED
+                || container.state == ContainerState.DEAD;
         }
 
         private static Gtk.Button trash_button (string tooltip) {
@@ -436,7 +437,7 @@ namespace DockStation {
         private async void prune_containers (int count) {
             if (yield Dialogs.confirm (this,
                     ngettext ("Remove %d Stopped Container?", "Remove All %d Stopped Containers?", count).printf (count),
-                    _("Docker estimates %s can be freed. Images and volumes are kept, and projects can create their containers again.").printf (reclaimable ("Containers")),
+                    _("Docker estimates %s can be freed. Images and volumes are kept, and projects can create their containers again.").printf (reclaimable (UsageType.CONTAINERS)),
                     _("_Remove"))) {
                 yield run_cleanup ({ "container", "prune", "--force" }, _("Stopped containers removed"));
             }
@@ -445,7 +446,7 @@ namespace DockStation {
         private async void prune_images (int count) {
             if (yield Dialogs.confirm (this,
                     ngettext ("Remove %d Unused Image?", "Remove All %d Unused Images?", count).printf (count),
-                    _("Removes every image that no container uses, including images built by your projects; they are pulled or built again when needed. Docker estimates %s can be freed.").printf (reclaimable ("Images")),
+                    _("Removes every image that no container uses, including images built by your projects; they are pulled or built again when needed. Docker estimates %s can be freed.").printf (reclaimable (UsageType.IMAGES)),
                     _("_Remove"))) {
                 yield run_cleanup ({ "image", "prune", "--all", "--force" }, _("Unused images removed"));
             }
@@ -454,7 +455,7 @@ namespace DockStation {
         private async void prune_volumes (int count) {
             if (yield Dialogs.confirm (this,
                     ngettext ("Delete %d Unused Volume?", "Delete All %d Unused Volumes?", count).printf (count),
-                    _("All data in these volumes, such as databases, is deleted permanently. This cannot be undone. Volumes attached to a container, even a stopped one, are kept. Docker estimates %s can be freed.").printf (reclaimable ("Local Volumes")),
+                    _("All data in these volumes, such as databases, is deleted permanently. This cannot be undone. Volumes attached to a container, even a stopped one, are kept. Docker estimates %s can be freed.").printf (reclaimable (UsageType.VOLUMES)),
                     _("_Delete"))) {
                 yield run_cleanup ({ "volume", "prune", "--all", "--force" }, _("Unused volumes deleted"));
             }
@@ -463,7 +464,7 @@ namespace DockStation {
         private async void prune_build_cache () {
             if (yield Dialogs.confirm (this,
                     _("Clear the Build Cache?"),
-                    _("Docker estimates %s can be freed. The next image builds will take longer.").printf (reclaimable ("Build Cache")),
+                    _("Docker estimates %s can be freed. The next image builds will take longer.").printf (reclaimable (UsageType.BUILD_CACHE)),
                     _("_Clear"))) {
                 yield run_cleanup ({ "builder", "prune", "--all", "--force" }, _("Build cache cleared"));
             }
@@ -482,8 +483,8 @@ namespace DockStation {
 
                 var subtitle = "%s · %s".printf (c.status, c.image);
                 var row = resource_row (c.name, subtitle, c.size);
-                var dot = new Gtk.Image.from_icon_name ("media-record-symbolic") { tooltip_text = c.state };
-                Utils.set_state_class (dot, Utils.container_state_class (c.state));
+                var dot = new Gtk.Image.from_icon_name ("media-record-symbolic") { tooltip_text = c.state.docker_name () };
+                Utils.set_state_class (dot, c.state.to_css_class ());
                 row.add_prefix (dot);
                 if (is_stopped (c)) {
                     var remove = trash_button (_("Remove Container"));
@@ -494,7 +495,7 @@ namespace DockStation {
                 bucket.add (row, c.size);
             }
 
-            var summary = summary_group ("Containers", _("Container sizes only count the data each container wrote; its image is counted under Images."));
+            var summary = summary_group (UsageType.CONTAINERS, _("Container sizes only count the data each container wrote; its image is counted under Images."));
             int stopped = 0;
             for (uint i = 0; i < data.containers.length; i++) {
                 if (is_stopped (data.containers[i])) {
@@ -555,7 +556,7 @@ namespace DockStation {
                 bucket.add (row, image.size);
             }
 
-            var summary = summary_group ("Images",
+            var summary = summary_group (UsageType.IMAGES,
                 _("Images share layers, so group totals can add up to more than the total size."));
             int unused = 0;
             for (uint i = 0; i < data.images.length; i++) {
@@ -570,7 +571,7 @@ namespace DockStation {
                 summary.header_suffix = prune;
             }
 
-            var cache = data.summaries["Build Cache"];
+            var cache = data.summary (UsageType.BUILD_CACHE);
             if (cache != null) {
                 var cache_row = add_property (summary, _("Build Cache"), Utils.format_size (cache.size));
                 if (cache.size > 0) {
@@ -606,7 +607,7 @@ namespace DockStation {
                 bucket.add (row, v.size);
             }
 
-            var summary = summary_group ("Local Volumes", _("Volumes hold persistent data, such as databases."));
+            var summary = summary_group (UsageType.VOLUMES, _("Volumes hold persistent data, such as databases."));
             int unused = 0;
             for (uint i = 0; i < data.volumes.length; i++) {
                 if (data.volumes[i].links == 0) {

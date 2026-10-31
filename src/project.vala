@@ -129,7 +129,7 @@ namespace DockStation {
             string[] ids = {};
             foreach (var container in containers) {
                 if (container.working_dir != path || (services.length > 0 && !(container.service in services))
-                    || (args[0] == "stop" && container.state != "running")) {
+                    || (args[0] == "stop" && container.state != ContainerState.RUNNING)) {
                     continue;
                 }
                 ids += container.id;

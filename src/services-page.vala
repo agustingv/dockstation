@@ -9,7 +9,7 @@ namespace DockStation {
         /* `service_names` changed. */
         public signal void services_changed ();
         public signal void reload_requested ();
-        public signal void service_action (ServiceRow row, string action);
+        public signal void service_action (ServiceRow row, ServiceAction action);
         public signal void open_url (string url);
 
         private Cancellable cancellable = new Cancellable ();
@@ -54,7 +54,7 @@ namespace DockStation {
             service_rows.foreach ((name, row) => row.set_actions_sensitive (sensitive));
         }
 
-        private void forward_action (ServiceRow row, string action) {
+        private void forward_action (ServiceRow row, ServiceAction action) {
             service_action (row, action);
         }
 
