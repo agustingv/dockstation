@@ -512,7 +512,16 @@ namespace DockStation {
             tray_busy[project.path] = busy_label;
             update_tray ();
             try {
-                var result = yield Docker.run (project.path, Docker.compose_args (args));
+                string[]? docker_args = Docker.compose_args (args);
+                if (!project.folder_exists) {
+                    docker_args = yield project.folderless_args (args);
+                    if (docker_args == null) {
+                        throw new IOError.NOT_FOUND (_("The project folder no longer exists"));
+                    }
+                }
+                var result = docker_args.length == 0
+                    ? new CommandResult ()
+                    : yield Docker.run (project.folder_exists ? project.path : null, docker_args);
                 if (!result.success) {
                     notify_failure (project, failure.printf (project.name), result.stderr_text);
                 }
