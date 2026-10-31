@@ -1,3 +1,12 @@
+## DockStation v0.1.6
+
+### Changes
+- Removing a service now shows the full command in the Output tab, as resetting a database already did.
+- Resetting a database checks that its data folder is safe to empty again right before running, not only before asking.
+
+### Internal
+- Resetting databases and removing services moved out of the project view, with unit tests for the order of their steps and for what happens when one fails.
+
 ## DockStation v0.1.5
 
 ### Changes
