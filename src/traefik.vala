@@ -80,7 +80,7 @@ namespace DockStation {
             return "";
         }
 
-        private static bool uses_tls (HashTable<string, string> labels, string router, string entrypoints) {
+        private bool uses_tls (HashTable<string, string> labels, string router, string entrypoints) {
             var prefix = ROUTER_PREFIX + router + ".tls";
             foreach (unowned string key in labels.get_keys ()) {
                 if (key == prefix) {
