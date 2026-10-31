@@ -17,14 +17,14 @@ namespace DockStation {
         private const string FILE_PATTERN = "^(\\./)?compose\\.(" + ServiceTemplate.NAME_PATTERN + ")\\.yaml$";
 
         /* The project's services that have their own included compose.<service>.yaml. */
-        public string[] added_services (Project project) {
-            var files = project.compose_files ();
+        public async string[] added_services (Project project) {
+            var files = yield project.compose_files ();
             string text;
             try {
                 if (files.length == 0) {
                     return {};
                 }
-                FileUtils.get_contents (files[0], out text);
+                text = yield Utils.read_text (File.new_for_path (files[0]));
             } catch (Error e) {
                 return {};
             }
@@ -119,7 +119,7 @@ namespace DockStation {
          * Nothing is changed yet: the caller removes the container, then calls apply ().
          */
         public async ServiceRemoval prepare (Project project, string service) throws Error {
-            var files = project.compose_files ();
+            var files = yield project.compose_files ();
             if (files.length == 0) {
                 throw new IOError.NOT_FOUND (_("The project has no compose file"));
             }

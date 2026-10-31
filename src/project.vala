@@ -145,8 +145,8 @@ namespace DockStation {
          * the ones in COMPOSE_FILE (from .env), or else the compose file and the first
          * override file found.
          */
-        public string[] compose_files () {
-            var listed = compose_files_from_env ();
+        public async string[] compose_files () {
+            var listed = yield compose_files_from_env ();
             if (listed != null) {
                 return listed;
             }
@@ -166,10 +166,10 @@ namespace DockStation {
             return files;
         }
 
-        private string[]? compose_files_from_env () {
+        private async string[]? compose_files_from_env () {
             string contents;
             try {
-                FileUtils.get_contents (Path.build_filename (path, ".env"), out contents);
+                contents = yield Utils.read_text (File.new_for_path (Path.build_filename (path, ".env")));
             } catch (Error e) {
                 return null;
             }

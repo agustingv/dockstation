@@ -129,7 +129,7 @@ namespace DockStation {
                 } else if (reload_config || !config_loaded) {
                     var config = yield Docker.run (project.path, Docker.compose_args ({ "config", "--services" }), cancellable);
                     config_loaded = true;
-                    removable_services = ServiceRemover.added_services (project);
+                    removable_services = yield ServiceRemover.added_services (project);
                     if (config.success) {
                         service_names = Utils.split_lines (config.stdout_text);
                         services_group.description = null;

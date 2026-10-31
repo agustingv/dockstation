@@ -131,7 +131,7 @@ namespace DockStation {
          */
         public async void add (Project project, ServiceTemplate template, string service,
                                ServiceVersion version, int host_port, HashTable<string, string> options) throws Error {
-            var files = project.compose_files ();
+            var files = yield project.compose_files ();
             if (files.length == 0 || !FileUtils.test (files[0], FileTest.IS_REGULAR)) {
                 throw new IOError.NOT_FOUND (_("The project has no compose file"));
             }
