@@ -288,11 +288,31 @@ private void docker_tests () {
             eq (ContainerState.parse (name).docker_name (), name);
         }
         assert (ContainerState.parse ("something-new") == ContainerState.UNKNOWN);
-        eq (ContainerState.RUNNING.to_css_class (), "success");
-        eq (ContainerState.PAUSED.to_css_class (), "warning");
-        eq (ContainerState.DEAD.to_css_class (), "error");
-        eq (ContainerState.EXITED.to_css_class (), "dim-label");
-        eq (ContainerState.UNKNOWN.to_css_class (), "dim-label");
+        eq (Widgets.container_state_class (ContainerState.RUNNING), "success");
+        eq (Widgets.container_state_class (ContainerState.PAUSED), "warning");
+        eq (Widgets.container_state_class (ContainerState.DEAD), "error");
+        eq (Widgets.container_state_class (ContainerState.EXITED), "dim-label");
+        eq (Widgets.container_state_class (ContainerState.UNKNOWN), "dim-label");
+    });
+    Test.add_func ("/docker/project-state-class", () => {
+        eq (Widgets.project_state_class (ProjectState.RUNNING), "success");
+        eq (Widgets.project_state_class (ProjectState.PARTIAL), "warning");
+        eq (Widgets.project_state_class (ProjectState.STOPPED), "dim-label");
+        eq (Widgets.project_state_class (ProjectState.NOT_CREATED), "dim-label");
+    });
+    // These act on containers directly, so a mistake could stop or delete another project's.
+    Test.add_func ("/docker/folderless-args", () => {
+        var containers = ComposeContainer.parse (
+            "/p\tdb\tFalse\trunning\tUp\t\tid-db\n"
+            + "/p\tcache\tFalse\texited\tExited\t\tid-cache\n"
+            + "/other\tdb\tFalse\trunning\tUp\t\tid-other\n");
+        eq_list (Docker.folderless_args_for ("/p", { "stop" }, containers), { "stop", "id-db" });
+        eq_list (Docker.folderless_args_for ("/p", { "stop", "cache" }, containers), {});
+        eq_list (Docker.folderless_args_for ("/p", { "rm", "cache" }, containers), { "rm", "--force", "id-cache" });
+        eq_list (Docker.folderless_args_for ("/p", { "down" }, containers), { "rm", "--force", "id-db", "id-cache" });
+        eq_list (Docker.folderless_args_for ("/p", { "down", "--volumes", "--rmi", "local" }, containers),
+                 { "rm", "--force", "--volumes", "id-db", "id-cache" });
+        eq_list (Docker.folderless_args_for ("/gone", { "down" }, containers), {});
     });
     Test.add_func ("/docker/mount-type", () => {
         assert (MountType.parse ("volume") == MountType.VOLUME);

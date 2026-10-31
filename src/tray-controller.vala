@@ -102,7 +102,7 @@ namespace DockStation {
             try {
                 string[]? docker_args = Docker.compose_args (args);
                 if (!project.folder_exists) {
-                    docker_args = yield project.folderless_args (args);
+                    docker_args = yield Docker.folderless_args (project.path, args);
                     if (docker_args == null) {
                         throw new IOError.NOT_FOUND (_("The project folder no longer exists"));
                     }

@@ -48,21 +48,6 @@ namespace DockStation {
                 default: return "unknown";
             }
         }
-
-        public string to_css_class () {
-            switch (this) {
-                case RUNNING:
-                    return "success";
-                case RESTARTING:
-                case PAUSED:
-                case REMOVING:
-                    return "warning";
-                case DEAD:
-                    return "error";
-                default:
-                    return "dim-label";
-            }
-        }
     }
 
     /* One line of `docker ps --format COMPOSE_PS_FORMAT`. */
@@ -153,6 +138,62 @@ namespace DockStation {
                 result += arg;
             }
             return result;
+        }
+
+        private const string[] FOLDERLESS_COMMANDS = { "stop", "down", "rm" };
+
+        /*
+         * Plain `docker` arguments doing what the compose command `args` does, for a project
+         * whose folder is gone. Only stopping and removing containers is possible without the
+         * files: returns null for other commands, and an empty array when there is nothing to do.
+         */
+        public async string[]? folderless_args (string working_dir, string[] args, Cancellable? cancellable = null) throws Error {
+            if (args.length == 0 || !(args[0] in FOLDERLESS_COMMANDS)) {
+                return null;
+            }
+            var containers = yield compose_containers (working_dir, cancellable);
+            return folderless_args_for (working_dir, args, containers);
+        }
+
+        /* See folderless_args (). Containers are found by folder, not by project name, which other folders may share. */
+        public string[] folderless_args_for (string working_dir, string[] args, GenericArray<ComposeContainer> containers) {
+            string[] services = {};
+            bool volumes = false;
+            for (int i = 1; i < args.length; i++) {
+                if (args[i] == "--volumes" || args[i] == "-v") {
+                    volumes = true;
+                } else if (args[i] == "--rmi") {
+                    i++;
+                } else if (!args[i].has_prefix ("-")) {
+                    services += args[i];
+                }
+            }
+
+            string[] ids = {};
+            foreach (var container in containers) {
+                if (container.working_dir != working_dir || (services.length > 0 && !(container.service in services))
+                    || (args[0] == "stop" && container.state != ContainerState.RUNNING)) {
+                    continue;
+                }
+                ids += container.id;
+            }
+            if (ids.length == 0) {
+                return {};
+            }
+
+            string[] docker_args;
+            if (args[0] == "stop") {
+                docker_args = { "stop" };
+            } else {
+                docker_args = { "rm", "--force" };
+                if (volumes) {
+                    docker_args += "--volumes";
+                }
+            }
+            foreach (unowned string id in ids) {
+                docker_args += id;
+            }
+            return docker_args;
         }
 
         /* Runs a command to completion and collects its output. */

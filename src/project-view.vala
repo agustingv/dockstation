@@ -142,7 +142,7 @@ namespace DockStation {
                     output_view.append ("$ docker compose %s\n".printf (string.joinv (" ", args)));
                 } else {
                     // Without its folder, Compose cannot run: act on the containers directly.
-                    var folderless = yield project.folderless_args (args, cancellable);
+                    var folderless = yield Docker.folderless_args (project.path, args, cancellable);
                     if (folderless == null) {
                         set_busy (false);
                         toast (_("The project folder no longer exists"));

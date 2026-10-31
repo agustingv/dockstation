@@ -38,7 +38,7 @@ namespace DockStation {
                 }
             });
 
-            var browse_button = Utils.flat_icon_button ("folder-open-symbolic", _("Choose Location"));
+            var browse_button = Widgets.flat_icon_button ("folder-open-symbolic", _("Choose Location"));
             browse_button.clicked.connect (choose_folder);
 
             location_row = new Adw.ActionRow () {
