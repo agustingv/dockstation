@@ -163,7 +163,7 @@ namespace DockStation.Utils {
     }
 
     /* The project name Compose derives from a folder name. */
-    public string compose_project_name (string folder_name) {
+    public string project_name_from_folder (string folder_name) {
         var builder = new StringBuilder ();
         var lower = folder_name.down ();
         for (int i = 0; i < lower.length; i++) {

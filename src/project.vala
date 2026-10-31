@@ -100,14 +100,14 @@ namespace DockStation {
             get { return FileUtils.test (path, FileTest.IS_DIR); }
         }
 
+        private const string[] FOLDERLESS_COMMANDS = { "stop", "down", "rm" };
+
         /*
          * Plain `docker` arguments doing what the compose command `args` does, for a project
          * whose folder is gone. Only stopping and removing containers is possible without the
          * files: returns null for other commands, and an empty array when there is nothing to do.
          * Containers are found by folder, not by project name, which other folders may share.
          */
-        private const string[] FOLDERLESS_COMMANDS = { "stop", "down", "rm" };
-
         public async string[]? folderless_args (string[] args, Cancellable? cancellable = null) throws Error {
             if (args.length == 0 || !(args[0] in FOLDERLESS_COMMANDS)) {
                 return null;
