@@ -200,7 +200,7 @@ namespace DockStation {
             // Otherwise, the name Compose derives from the folder name.
             for (uint i = 0; i < store.projects.get_n_items (); i++) {
                 var project = (Project) store.projects.get_item (i);
-                var name = Utils.compose_project_name (Path.get_basename (project.path));
+                var name = Utils.project_name_from_folder (Path.get_basename (project.path));
                 if (!projects_by_compose_name.contains (name)) {
                     projects_by_compose_name[name] = project;
                 }

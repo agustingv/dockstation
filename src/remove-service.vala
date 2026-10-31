@@ -104,7 +104,8 @@ namespace DockStation {
             return string.joinv ("\n", result);
         }
 
-        private string? compose_project_name (string config) {
+        /* The project's name in the output of `docker compose config`. */
+        private string? project_name_in_config (string config) {
             foreach (unowned string line in config.split ("\n")) {
                 if (line.has_prefix ("name:")) {
                     return line.substring ("name:".length).strip ();
@@ -153,7 +154,7 @@ namespace DockStation {
             var own = yield Docker.run (project.path, Docker.compose_args ({ "-f", removal.service_file.get_path (), "config", "--volumes" }));
             var own_volumes = own.success ? Utils.split_lines (own.stdout_text) : new string[0];
             var full = yield Docker.run (project.path, Docker.compose_args ({ "config" }));
-            var project_name = full.success ? compose_project_name (full.stdout_text) : null;
+            var project_name = full.success ? project_name_in_config (full.stdout_text) : null;
 
             // The project without the service: it must stay valid.
             var overlay = new ComposeOverlay (files);

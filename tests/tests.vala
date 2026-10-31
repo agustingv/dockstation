@@ -182,8 +182,8 @@ private void utils_tests () {
         eq (Utils.slugify ("***"), "");
     });
     Test.add_func ("/utils/compose-project-name", () => {
-        eq (Utils.compose_project_name ("My App_1"), "myapp_1");
-        eq (Utils.compose_project_name ("-_x-y"), "x-y");
+        eq (Utils.project_name_from_folder ("My App_1"), "myapp_1");
+        eq (Utils.project_name_from_folder ("-_x-y"), "x-y");
     });
     Test.add_func ("/utils/parse-size", () => {
         eq_int (Utils.parse_size ("0B"), 0);
