@@ -24,6 +24,8 @@ BuildRequires:  pkgconfig(libportal-gtk4) >= 0.7
 
 Recommends:     (moby-engine or docker-ce or docker)
 Recommends:     (docker-compose or docker-compose-plugin)
+# GTK aborts at startup without libGLESv2, which it opens at run time.
+Recommends:     libglvnd-gles
 
 %description
 DockStation keeps all your Docker Compose projects in one place. Start, stop
