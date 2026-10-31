@@ -129,8 +129,7 @@ namespace DockStation {
             var file_name = ServiceTemplate.compose_file_name (service);
             removal.service_file = File.new_for_path (Path.build_filename (Path.get_dirname (removal.main_path), file_name));
 
-            string main_text;
-            FileUtils.get_contents (removal.main_path, out main_text);
+            var main_text = yield Utils.read_text (File.new_for_path (removal.main_path));
             removal.new_main = remove_include (main_text, file_name);
             if (removal.new_main == null) {
                 throw new IOError.NOT_FOUND (_("%s does not include %s").printf (Path.get_basename (removal.main_path), file_name));
@@ -138,8 +137,10 @@ namespace DockStation {
 
             removal.env_file = File.new_for_path (Path.build_filename (project.path, ".env"));
             string env_text = "";
-            if (removal.env_file.query_exists ()) {
-                FileUtils.get_contents (removal.env_file.get_path (), out env_text);
+            try {
+                env_text = yield Utils.read_text (removal.env_file);
+            } catch (IOError.NOT_FOUND e) {
+                // No .env: there is nothing to remove from it.
             }
             var new_env = remove_env_block (env_text, service);
             string[] removed_keys = {};

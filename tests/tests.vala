@@ -215,6 +215,41 @@ private void utils_tests () {
         eq (Utils.strip_terminal_codes ("\x1b[1;32mok\x1b[0m \x1b[?25lend"), "ok end");
         eq (Utils.strip_terminal_codes ("plain [2K text"), "plain [2K text");
     });
+    Test.add_func ("/utils/read-text", () => {
+        try {
+            FileIOStream stream;
+            var file = File.new_tmp ("dockstation-XXXXXX", out stream);
+            file.replace_contents ("name: blog\n".data, null, false, FileCreateFlags.NONE, null);
+            var missing = file.get_parent ().get_child (file.get_basename () + ".missing");
+
+            string? text = null;
+            bool reported_missing = false;
+            var loop = new MainLoop ();
+            Utils.read_text.begin (file, (obj, res) => {
+                try {
+                    text = Utils.read_text.end (res);
+                } catch (Error e) {
+                    assert_not_reached ();
+                }
+                Utils.read_text.begin (missing, (obj2, res2) => {
+                    try {
+                        Utils.read_text.end (res2);
+                    } catch (IOError.NOT_FOUND e) {
+                        reported_missing = true;
+                    } catch (Error e) {
+                        assert_not_reached ();
+                    }
+                    loop.quit ();
+                });
+            });
+            loop.run ();
+            file.delete ();
+            eq (text, "name: blog\n");
+            assert (reported_missing);
+        } catch (Error e) {
+            assert_not_reached ();
+        }
+    });
     Test.add_func ("/utils/without-handler", () => {
         var source = new SimpleAction ("test", null);
         int calls = 0;

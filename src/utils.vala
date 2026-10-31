@@ -252,6 +252,13 @@ namespace DockStation.Utils {
         return file.get_path ();
     }
 
+    /* Reads a text file without blocking the interface. */
+    public async string read_text (File file) throws Error {
+        uint8[] contents;
+        yield file.load_contents_async (null, out contents, null);
+        return (string) contents;
+    }
+
     public bool is_directory_empty (File dir) {
         try {
             var enumerator = dir.enumerate_children (FileAttribute.STANDARD_NAME, FileQueryInfoFlags.NONE);
