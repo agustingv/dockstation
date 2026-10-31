@@ -12,9 +12,8 @@ namespace DockStation {
         private Gtk.ListBox tools_list;
         private Gtk.Widget tools_area;
         private AppSettings settings;
-        private bool opening_tool = false;
+        private ulong tool_selected_handler;
         private ResourcesView? resources_view = null;
-        private bool syncing_selection = false;
         private bool refreshing = false;
         private bool close_confirmed = false;
         private bool opening_initial_project = false;
@@ -175,7 +174,7 @@ namespace DockStation {
             });
             // Open only on an explicit click or Enter: keyboard focus landing on the
             // row when the window opens must not start measuring disk usage.
-            tools_list.row_selected.connect (on_tool_selected);
+            tool_selected_handler = tools_list.row_selected.connect (on_tool_selected);
             tools_list.row_activated.connect (on_tool_activated);
 
             var tools_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
@@ -227,9 +226,7 @@ namespace DockStation {
             tools_area.visible = settings.show_resources;
             // Hiding the entry while its page is open goes back to the placeholder.
             if (!settings.show_resources && tools_list.get_selected_row () != null) {
-                syncing_selection = true;
                 tools_list.unselect_all ();
-                syncing_selection = false;
                 show_project.begin (null);
             }
         }
@@ -245,14 +242,10 @@ namespace DockStation {
         /* ----------------------------------------------------------- navigation */
 
         private void on_row_selected (Gtk.ListBoxRow? row) {
-            if (syncing_selection) {
-                return;
-            }
             if (row != null) {
-                syncing_selection = true;
                 tools_list.unselect_all ();
-                syncing_selection = false;
             } else if (tools_list.get_selected_row () != null) {
+                // The project was unselected because a tool opened.
                 return;
             }
             var project = row != null ? ((ProjectRow) row).project : null;
@@ -264,22 +257,15 @@ namespace DockStation {
 
         /* Selection alone (for example, from keyboard focus) is undone; see on_tool_activated. */
         private void on_tool_selected (Gtk.ListBoxRow? row) {
-            if (syncing_selection || opening_tool || row == null) {
-                return;
+            if (row != null) {
+                tools_list.unselect_all ();
             }
-            syncing_selection = true;
-            tools_list.unselect_all ();
-            syncing_selection = false;
         }
 
         private void on_tool_activated (Gtk.ListBoxRow row) {
-            opening_tool = true;
-            tools_list.select_row (row);
-            opening_tool = false;
+            Utils.without_handler (tools_list, tool_selected_handler, () => tools_list.select_row (row));
 
-            syncing_selection = true;
             project_list.unselect_all ();
-            syncing_selection = false;
             if (resources_view == null || content_page.child != resources_view) {
                 show_resources.begin ();
             }

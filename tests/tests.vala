@@ -215,6 +215,15 @@ private void utils_tests () {
         eq (Utils.strip_terminal_codes ("\x1b[1;32mok\x1b[0m \x1b[?25lend"), "ok end");
         eq (Utils.strip_terminal_codes ("plain [2K text"), "plain [2K text");
     });
+    Test.add_func ("/utils/without-handler", () => {
+        var source = new SimpleAction ("test", null);
+        int calls = 0;
+        var handler = source.activate.connect (() => calls++);
+        Utils.without_handler (source, handler, () => source.activate (null));
+        assert (calls == 0);
+        source.activate (null);
+        assert (calls == 1);
+    });
     Test.add_func ("/utils/split-lines", () => {
         eq_list (Utils.split_lines ("a\n\n  b  \n"), { "a", "b" });
     });
