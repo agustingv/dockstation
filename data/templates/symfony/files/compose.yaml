@@ -1,0 +1,39 @@
+name: {{SLUG}}
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        PHP_VERSION: ${PHP_VERSION}
+    # Run as your user so files created in ./app belong to you.
+    user: "${UID}:${GID}"
+    ports:
+      - "${HOST_PORT}:8000"
+    environment:
+      HOST_PORT: ${HOST_PORT}
+      DATABASE_URL: postgresql://app:${POSTGRES_PASSWORD}@database:5432/app?serverVersion=17&charset=utf8
+    volumes:
+      - ./app:/app
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  database-data:

@@ -907,94 +907,6 @@ msgstr "Abrir %s"
 msgid "Stop"
 msgstr "Detener"
 
-#: src/templates.vala:119
-msgid "Blank"
-msgstr "En blanco"
-
-#: src/templates.vala:119
-msgid "A minimal compose file to start from scratch"
-msgstr "Un archivo compose mínimo para empezar desde cero"
-
-#: src/templates.vala:134
-msgid "Static Website"
-msgstr "Sitio web estático"
-
-#: src/templates.vala:134
-msgid "Nginx serving the files in ./html"
-msgstr "Nginx sirviendo los archivos de ./html"
-
-#: src/templates.vala:161
-msgid "PostgreSQL + Adminer"
-msgstr "PostgreSQL + Adminer"
-
-#: src/templates.vala:161
-msgid "A PostgreSQL database with a web administration UI"
-msgstr "Una base de datos PostgreSQL con una interfaz web de administración"
-
-#: src/templates.vala:199
-msgid "PHP App"
-msgstr "Aplicación PHP"
-
-#: src/templates.vala:199
-msgid "PHP with Apache, serving the files in ./src"
-msgstr "PHP con Apache, sirviendo los archivos de ./src"
-
-#: src/templates.vala:200
-msgid "The PHP version of the image"
-msgstr "La versión de PHP de la imagen"
-
-#: src/templates.vala:250
-msgid "WordPress"
-msgstr "WordPress"
-
-#: src/templates.vala:250
-msgid "WordPress with a MariaDB database"
-msgstr "WordPress con una base de datos MariaDB"
-
-#: src/templates.vala:252
-msgid "Some plugins may not support the newest PHP yet"
-msgstr "Puede que algunos complementos aún no admitan la versión más reciente de PHP"
-
-#: src/templates.vala:300
-msgid "Drupal"
-msgstr "Drupal"
-
-#: src/templates.vala:300
-msgid "Drupal 11 with a MariaDB database"
-msgstr "Drupal 11 con una base de datos MariaDB"
-
-#: src/templates.vala:302
-msgid "Drupal 11 requires PHP 8.3 or newer"
-msgstr "Drupal 11 necesita PHP 8.3 o posterior"
-
-#: src/templates.vala:366
-msgid "Node.js App"
-msgstr "Aplicación Node.js"
-
-#: src/templates.vala:366
-msgid "A Node.js HTTP server built from a Dockerfile"
-msgstr "Un servidor HTTP de Node.js construido a partir de un Dockerfile"
-
-#: src/templates.vala:408
-msgid "Python App"
-msgstr "Aplicación Python"
-
-#: src/templates.vala:408
-msgid "A Flask application served by Gunicorn"
-msgstr "Una aplicación Flask servida con Gunicorn"
-
-#: src/templates.vala:440
-msgid "Symfony"
-msgstr "Symfony"
-
-#: src/templates.vala:440
-msgid "A Symfony app with PostgreSQL, created on first start"
-msgstr "Una aplicación Symfony con PostgreSQL, creada en el primer inicio"
-
-#: src/templates.vala:442
-msgid "Symfony 8 requires PHP 8.4 or newer; older versions get Symfony 7.4 LTS"
-msgstr "Symfony 8 necesita PHP 8.4 o posterior; con versiones anteriores se instala Symfony 7.4 LTS"
-
 #. Sidebar
 #: src/window.vala:78
 msgid "_New Project…"
@@ -1426,3 +1338,8 @@ msgstr "La carpeta ya no existe: se conservan los volúmenes con nombre y las im
 #: src/project-view.vala
 msgid "The folder no longer exists"
 msgstr "La carpeta ya no existe"
+
+#: src/templates.vala
+#, c-format
+msgid "Unknown Composer support “%s”"
+msgstr "Compatibilidad con Composer desconocida «%s»"

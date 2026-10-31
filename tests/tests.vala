@@ -719,6 +719,35 @@ private void service_template_tests () {
             assert (e.message.contains ("MISSING"));
         }
     });
+    // A template left out of the resources would otherwise just vanish from the dialog.
+    Test.add_func ("/templates/project-templates-load", () => {
+        var templates = Templates.all ();
+        eq_int (templates.length, Templates.BUILT_IN.length);
+        foreach (var template in templates) {
+            assert (template.name != "" && template.description != "");
+            if (template.uses_php) {
+                assert (template.default_php_version in template.php_versions);
+                assert (template.composer != ComposerSupport.NONE);
+            }
+        }
+    });
+    // Hidden and empty files are easy to lose on the way into the resources.
+    Test.add_func ("/templates/project-templates-write-every-file", () => {
+        try {
+            var dir = temp_project ();
+            var vars = table ({
+                "NAME", "App", "SLUG", "app", "PORT", "8080", "PASSWORD", "secret",
+                "UID", "1000", "GID", "1000", "PHP_VERSION", "8.4", "COMPOSER_INSTALL", "",
+            });
+            Templates.all ()[Templates.BUILT_IN.length - 1].write_to (File.new_for_path (dir), vars);
+            foreach (unowned string path in new string[] { ".env", ".dockerignore", "app/.gitkeep", "docker-entrypoint.sh" }) {
+                assert (FileUtils.test (Path.build_filename (dir, path), FileTest.IS_REGULAR));
+            }
+            Process.spawn_command_line_sync ("rm -rf " + Shell.quote (dir));
+        } catch (Error e) {
+            error ("%s", e.message);
+        }
+    });
     // A placeholder nobody fills in is an error, which would stop the project from being created.
     Test.add_func ("/templates/project-templates-write", () => {
         var vars = table ({

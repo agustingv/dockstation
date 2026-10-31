@@ -1,0 +1,8 @@
+name: {{SLUG}}
+
+services:
+  app:
+    build: .
+    ports:
+      - "${HOST_PORT}:5000"
+    restart: unless-stopped
