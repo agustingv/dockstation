@@ -73,7 +73,7 @@ namespace DockStation {
             return false;
         }
 
-        private void add_init_mount (string type, string name, string source, string destination) {
+        private void add_init_mount (string type, string name, string source) {
             if (type == "bind") {
                 if (FileUtils.test (source, FileTest.IS_DIR)) {
                     try {
@@ -171,7 +171,7 @@ namespace DockStation {
                 var destination = f[4];
 
                 if (destination == INIT_DIR || destination.has_prefix (INIT_DIR + "/")) {
-                    add_init_mount (type, name, source, destination);
+                    add_init_mount (type, name, source);
                     continue;
                 }
                 var detected = destination == pgdata ? "PostgreSQL" : engine_for_data_dir (destination);

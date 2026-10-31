@@ -55,6 +55,24 @@ namespace DockStation.Utils {
         return lines;
     }
 
+    /* The first line of a command's message, or null if it is empty. */
+    public string? first_line (string text) {
+        var lines = text.strip ().split ("\n");
+        return lines.length > 0 ? lines[0].strip () : null;
+    }
+
+    /* Removes terminal control sequences; Compose sends them even with --no-color, such as ESC[2K before log lines. */
+    public string strip_terminal_codes (string text) {
+        if (!text.contains ("\x1b")) {
+            return text;
+        }
+        try {
+            return /\x1b\[[0-9;?]*[ -\/]*[@-~]/.replace (text, -1, 0, "");
+        } catch (RegexError e) {
+            return text;
+        }
+    }
+
     private Regex? port_regex = null;
 
     private Regex get_port_regex () {
@@ -147,14 +165,14 @@ namespace DockStation.Utils {
         return path;
     }
 
-    public string random_secret (int length) {
+    /* Fails rather than falling back to a weak generator: these are real passwords. */
+    public string random_secret (int length) throws Error {
         const string ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
         var bytes = new uint8[length];
-        var urandom = FileStream.open ("/dev/urandom", "rb");
-        if (urandom == null || urandom.read (bytes) != length) {
-            for (int i = 0; i < length; i++) {
-                bytes[i] = (uint8) Random.int_range (0, 256);
-            }
+        size_t bytes_read;
+        File.new_for_path ("/dev/urandom").read ().read_all (bytes, out bytes_read);
+        if (bytes_read != length) {
+            throw new IOError.FAILED ("Could not read enough random data");
         }
         var builder = new StringBuilder ();
         foreach (var b in bytes) {

@@ -98,6 +98,8 @@ namespace DockStation {
         private Adw.PreferencesGroup services_group;
         private HashTable<string, ServiceRow> service_rows;
         private string[] service_names = {};
+        // Services that can be removed; read from the files only when the configuration is reloaded.
+        private string[] removable_services = {};
         private bool config_loaded = false;
         private bool refreshing_services = false;
         // Databases that can be reset, keyed by container ID; inspected again when the IDs change.
@@ -237,10 +239,6 @@ namespace DockStation {
             ((SimpleAction) actions.lookup_action (name)).set_enabled (enabled);
         }
 
-        private string[] compose_args (string[] args) {
-            return Docker.compose_args (args);
-        }
-
         private void set_busy (bool value) {
             busy = value;
             spinner.visible = value;
@@ -267,7 +265,7 @@ namespace DockStation {
             try {
                 string[] docker_args;
                 if (folder_exists) {
-                    docker_args = compose_args (args);
+                    docker_args = Docker.compose_args (args);
                     output_view.append ("$ docker compose %s\n".printf (string.joinv (" ", args)));
                 } else {
                     // Without its folder, Compose cannot run: act on the containers directly.
@@ -316,17 +314,10 @@ namespace DockStation {
         }
 
         private async void confirm_down_volumes () {
-            var dialog = new Adw.AlertDialog (
-                _("Remove Containers and Volumes?"),
-                _("This runs “docker compose down --volumes”. All data stored in the project’s named volumes will be permanently deleted.")
-            );
-            dialog.add_response ("cancel", _("_Cancel"));
-            dialog.add_response ("remove", _("_Remove"));
-            dialog.set_response_appearance ("remove", Adw.ResponseAppearance.DESTRUCTIVE);
-            dialog.default_response = "cancel";
-            dialog.close_response = "cancel";
-
-            if ((yield dialog.choose (this, null)) == "remove") {
+            if (yield Dialogs.confirm (this,
+                    _("Remove Containers and Volumes?"),
+                    _("This runs “docker compose down --volumes”. All data stored in the project’s named volumes will be permanently deleted."),
+                    _("_Remove"))) {
                 yield run_compose ({ "down", "--volumes" }, _("Containers and volumes removed"), _("Could not take the project down"));
             }
         }
@@ -337,17 +328,10 @@ namespace DockStation {
          * network attachments and hostname.
          */
         private async void confirm_recreate () {
-            var dialog = new Adw.AlertDialog (
-                _("Recreate Containers?"),
-                _("The containers are created again from their images and started. Data in volumes and project folders is kept; changes made inside the containers are lost.")
-            );
-            dialog.add_response ("cancel", _("_Cancel"));
-            dialog.add_response ("recreate", _("_Recreate"));
-            dialog.set_response_appearance ("recreate", Adw.ResponseAppearance.SUGGESTED);
-            dialog.default_response = "cancel";
-            dialog.close_response = "cancel";
-
-            if ((yield dialog.choose (this, null)) == "recreate") {
+            if (yield Dialogs.confirm (this,
+                    _("Recreate Containers?"),
+                    _("The containers are created again from their images and started. Data in volumes and project folders is kept; changes made inside the containers are lost."),
+                    _("_Recreate"), Adw.ResponseAppearance.SUGGESTED)) {
                 // --remove-orphans also removes containers of services that no longer exist.
                 yield run_compose ({ "up", "--detach", "--force-recreate", "--remove-orphans" },
                                    _("Containers recreated"), _("Could not recreate the containers"));
@@ -378,19 +362,10 @@ namespace DockStation {
             options.append (containers_row);
             options.append (folder_row);
 
-            var dialog = new Adw.AlertDialog (
-                _("Delete “%s”?").printf (project.name),
-                _("The project will be removed from the list. Data in volumes cannot be recovered.")
-            ) {
-                extra_child = options,
-            };
-            dialog.add_response ("cancel", _("_Cancel"));
-            dialog.add_response ("delete", _("_Delete"));
-            dialog.set_response_appearance ("delete", Adw.ResponseAppearance.DESTRUCTIVE);
-            dialog.default_response = "cancel";
-            dialog.close_response = "cancel";
-
-            if ((yield dialog.choose (this, null)) != "delete") {
+            if (!(yield Dialogs.confirm (this,
+                    _("Delete “%s”?").printf (project.name),
+                    _("The project will be removed from the list. Data in volumes cannot be recovered."),
+                    _("_Delete"), Adw.ResponseAppearance.DESTRUCTIVE, options))) {
                 return;
             }
             bool remove_containers = containers_row.active;
@@ -679,7 +654,8 @@ namespace DockStation {
             bar.append (revert_button);
             bar.append (save_button);
 
-            editor_banner = new Adw.Banner ("");
+            // Compose's messages are plain text, not markup.
+            editor_banner = new Adw.Banner ("") { use_markup = false };
 
             editor_buffer = new GtkSource.Buffer (null);
             editor_buffer.changed.connect (() => {
@@ -812,11 +788,13 @@ namespace DockStation {
                     // No files to read: the services are just the containers that are left.
                     config_loaded = false;
                     service_names = {};
+                    removable_services = {};
                     services_group.description = null;
                     update_logs_services ();
                 } else if (reload_config || !config_loaded) {
-                    var config = yield Docker.run (project.path, compose_args ({ "config", "--services" }), cancellable);
+                    var config = yield Docker.run (project.path, Docker.compose_args ({ "config", "--services" }), cancellable);
                     config_loaded = true;
+                    removable_services = ServiceRemover.added_services (project);
                     if (config.success) {
                         service_names = Utils.split_lines (config.stdout_text);
                         services_group.description = null;
@@ -830,7 +808,7 @@ namespace DockStation {
                 var infos = new HashTable<string, ServiceInfo> (str_hash, str_equal);
                 string[] order = {};
                 foreach (unowned string name in service_names) {
-                    infos[name] = new ServiceInfo (name);
+                    infos[name] = new ServiceInfo ();
                     order += name;
                 }
 
@@ -849,7 +827,7 @@ namespace DockStation {
                     var info = infos[container.service];
                     if (info == null) {
                         // Orphan container of a service no longer in the file.
-                        info = new ServiceInfo (container.service);
+                        info = new ServiceInfo ();
                         infos[container.service] = info;
                         order += container.service;
                     }
@@ -904,7 +882,6 @@ namespace DockStation {
                 }
             }
 
-            var removable = ServiceRemover.added_services (project);
             foreach (unowned string name in order) {
                 var row = service_rows[name];
                 if (row == null) {
@@ -919,7 +896,7 @@ namespace DockStation {
                 row.show_traefik_routes (info.container_id != "" ? traefik_routes[info.container_id] : null);
                 row.update (info);
                 row.show_database_reset (info.containers == 1 ? databases[info.container_id] : null);
-                row.show_remove (name in removable);
+                row.show_remove (name in removable_services);
             }
 
             if (order.length == 0 && services_group.description == null) {
@@ -974,9 +951,7 @@ namespace DockStation {
             try {
                 removal = yield ServiceRemover.prepare (project, service);
             } catch (Error e) {
-                var alert = new Adw.AlertDialog (_("Could Not Remove the Service"), e.message);
-                alert.add_response ("close", _("_Close"));
-                alert.present (this);
+                Dialogs.show_error (this, _("Could Not Remove the Service"), e.message);
                 return;
             }
 
@@ -989,20 +964,11 @@ namespace DockStation {
             options.add_css_class ("boxed-list");
             options.append (data_row);
 
-            var dialog = new Adw.AlertDialog (
-                _("Remove Service “%s”?").printf (service),
-                _("Its container is removed, and %s and its settings in .env are deleted. Files in its folders are kept.")
-                    .printf (removal.service_file.get_basename ())
-            );
-            if (removal.volumes.length > 0) {
-                dialog.extra_child = options;
-            }
-            dialog.add_response ("cancel", _("_Cancel"));
-            dialog.add_response ("remove", _("_Remove"));
-            dialog.set_response_appearance ("remove", Adw.ResponseAppearance.DESTRUCTIVE);
-            dialog.default_response = "cancel";
-            dialog.close_response = "cancel";
-            if ((yield dialog.choose (this, null)) != "remove") {
+            if (!(yield Dialogs.confirm (this,
+                    _("Remove Service “%s”?").printf (service),
+                    _("Its container is removed, and %s and its settings in .env are deleted. Files in its folders are kept.")
+                        .printf (removal.service_file.get_basename ()),
+                    _("_Remove"), Adw.ResponseAppearance.DESTRUCTIVE, removal.volumes.length > 0 ? options : null))) {
                 return;
             }
 
@@ -1093,17 +1059,11 @@ namespace DockStation {
                 scripts += "\n• " + _("the scripts in the volume “%s”").printf (volume);
             }
 
-            var dialog = new Adw.AlertDialog (
-                _("Reset Database “%s”?").printf (service),
-                _("All data in this %s database, stored in %s, is deleted permanently. This cannot be undone.").printf (database.engine, storage)
-                + "\n\n" + _("The database is then created again, running its init scripts:") + scripts
-            );
-            dialog.add_response ("cancel", _("_Cancel"));
-            dialog.add_response ("reset", _("_Reset Database"));
-            dialog.set_response_appearance ("reset", Adw.ResponseAppearance.DESTRUCTIVE);
-            dialog.default_response = "cancel";
-            dialog.close_response = "cancel";
-            if ((yield dialog.choose (this, null)) != "reset") {
+            if (!(yield Dialogs.confirm (this,
+                    _("Reset Database “%s”?").printf (service),
+                    _("All data in this %s database, stored in %s, is deleted permanently. This cannot be undone.").printf (database.engine, storage)
+                    + "\n\n" + _("The database is then created again, running its init scripts:") + scripts,
+                    _("_Reset Database")))) {
                 return;
             }
 
@@ -1113,8 +1073,8 @@ namespace DockStation {
             bool success = false;
             try {
                 // 1. Stop and remove the container; --volumes also drops an unnamed data volume.
-                if ((yield run_step (compose_args ({ "stop", service })))
-                    && (yield run_step (compose_args ({ "rm", "--force", "--volumes", service })))) {
+                if ((yield run_step (Docker.compose_args ({ "stop", service })))
+                    && (yield run_step (Docker.compose_args ({ "rm", "--force", "--volumes", service })))) {
                     // 2. Empty the data, so the entrypoint initialises the database again.
                     bool emptied = true;
                     if (database.data_type == "volume" && !database.data_is_anonymous_volume) {
@@ -1127,7 +1087,7 @@ namespace DockStation {
                         });
                     }
                     // 3. Start it again, even after a failure, so the service is not left down.
-                    bool started = yield run_step (compose_args ({ "up", "--detach", service }));
+                    bool started = yield run_step (Docker.compose_args ({ "up", "--detach", service }));
                     success = emptied && started;
                 }
             } catch (IOError.CANCELLED e) {
@@ -1204,7 +1164,7 @@ namespace DockStation {
                 args += logs_services_model.get_string (selected);
             }
 
-            Docker.stream.begin (project.path, compose_args (args), (line) => {
+            Docker.stream.begin (project.path, Docker.compose_args (args), (line) => {
                 if (!stream_cancellable.is_cancelled ()) {
                     logs_view.append (line + "\n");
                 }
@@ -1488,81 +1448,45 @@ namespace DockStation {
         }
 
         private async void validate (bool after_save) {
-            string? edited = null;
-            string? copy = null;
+            var overlay = new ComposeOverlay (project.compose_files ());
             try {
-                string[] args = {};
                 // Check the text in the editor, not the file on disk: Compose gets a copy of it instead.
                 if (dirty && file_at (current_file_index).kind == EditorFileKind.COMPOSE) {
-                    edited = editing_path;
-                    args = compose_args_with_copy (edited, out copy);
+                    overlay_editor_text (overlay);
                 }
-                args += "config";
-                args += "--quiet";
 
-                var result = yield Docker.run (project.path, compose_args (args), cancellable);
+                var result = yield Docker.run (project.path, overlay.compose_args ({ "config", "--quiet" }), cancellable);
                 if (result.success) {
                     editor_banner.revealed = false;
                     if (!after_save) {
                         toast (_("The configuration is valid"));
                     }
                     // The services list reflects the files on disk.
-                    if (copy == null) {
+                    if (!overlay.has_copies) {
                         reload ();
                     }
                 } else {
-                    var message = result.stderr_text.strip ();
-                    if (copy != null) {
-                        message = message.replace (copy, edited)
-                            .replace (Path.get_basename (copy), Path.get_basename (edited));
-                    }
-                    editor_banner.title = Markup.escape_text (message);
+                    editor_banner.title = overlay.restore_paths (result.stderr_text.strip ());
                     editor_banner.revealed = true;
                 }
             } catch (IOError.CANCELLED e) {
             } catch (Error e) {
                 toast (e.message);
             } finally {
-                if (copy != null) {
-                    FileUtils.unlink (copy);
-                }
+                overlay.remove ();
             }
         }
 
-        /*
-         * Compose options that load a copy of the editor text in place of `edited`. `copy` is
-         * left null (and no options returned) when Compose does not load that file at all.
-         */
-        private string[] compose_args_with_copy (string edited, out string? copy) throws Error {
-            copy = null;
-            var edited_file = File.new_for_path (edited);
-            if (Path.get_basename (edited) == ".env") {
-                copy = write_editor_copy (edited);
-                return { "--env-file", copy };
-            }
-
-            var files = project.compose_files ();
-            bool loaded = false;
-            foreach (unowned string file in files) {
-                loaded |= File.new_for_path (file).equal (edited_file);
-            }
-            if (!loaded) {
-                return {};
-            }
-
-            copy = write_editor_copy (edited);
-            string[] args = {};
-            foreach (unowned string file in files) {
-                args += "-f";
-                args += File.new_for_path (file).equal (edited_file) ? copy : file;
-            }
-            return args;
-        }
-
-        private string write_editor_copy (string original) throws Error {
+        /* Does nothing when Compose does not load the edited file at all. */
+        private void overlay_editor_text (ComposeOverlay overlay) throws Error {
             Gtk.TextIter start, end;
             editor_buffer.get_bounds (out start, out end);
-            return Utils.write_hidden_copy (original, editor_buffer.get_text (start, end, true));
+            var text = editor_buffer.get_text (start, end, true);
+            if (Path.get_basename (editing_path) == ".env") {
+                overlay.replace_env (editing_path, text);
+            } else if (overlay.loads (editing_path)) {
+                overlay.replace_file (editing_path, text);
+            }
         }
     }
 }

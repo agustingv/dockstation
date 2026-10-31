@@ -11,17 +11,14 @@ namespace DockStation {
         public string? add_include (string text, string path) {
             string[] lines = text.split ("\n");
 
-            int include_line = -1;
+            var include = new ComposeInclude (lines);
+            if (include.is_flow_list) {
+                return null;
+            }
             int name_line = -1;
             int services_line = -1;
             for (int i = 0; i < lines.length; i++) {
-                if (include_line < 0 && lines[i].has_prefix ("include:")) {
-                    var rest = lines[i].substring ("include:".length).strip ();
-                    if (rest != "" && !rest.has_prefix ("#")) {
-                        return null;  // A flow list such as `include: [a.yaml]`
-                    }
-                    include_line = i;
-                } else if (name_line < 0 && lines[i].has_prefix ("name:")) {
+                if (name_line < 0 && lines[i].has_prefix ("name:")) {
                     name_line = i;
                 } else if (services_line < 0 && lines[i].has_prefix ("services:")) {
                     services_line = i;
@@ -30,27 +27,10 @@ namespace DockStation {
 
             string[] insert;
             int at;
-            if (include_line >= 0) {
+            if (include.key_line >= 0) {
                 // Append after the last item, with the indentation the list already uses.
-                at = include_line + 1;
-                string indent = "  ";
-                bool indent_found = false;
-                for (int i = include_line + 1; i < lines.length; i++) {
-                    unowned string line = lines[i];
-                    var stripped = line.strip ();
-                    if (stripped == "" || stripped.has_prefix ("#")) {
-                        continue;
-                    }
-                    if (!line.has_prefix (" ") && !line.has_prefix ("\t") && !line.has_prefix ("-")) {
-                        break;  // The next top-level key
-                    }
-                    if (!indent_found && stripped.has_prefix ("-")) {
-                        indent = line.substring (0, line.index_of ("-"));
-                        indent_found = true;
-                    }
-                    at = i + 1;
-                }
-                insert = { indent + "- " + path };
+                at = include.end_line;
+                insert = { include.indent + "- " + path };
             } else if (name_line >= 0) {
                 at = name_line + 1;
                 insert = { "", "include:", "  - " + path };
@@ -115,8 +95,8 @@ namespace DockStation {
         }
 
         /* Values for the template's placeholders. */
-        public HashTable<string, string> placeholders (ServiceTemplate template, string service,
-                                                       ServiceVersion version, HashTable<string, string> options) {
+        public HashTable<string, string> placeholders (string service, ServiceVersion version,
+                                                       HashTable<string, string> options) throws Error {
             var vars = new HashTable<string, string> (str_hash, str_equal);
             version.vars.foreach ((key, value) => vars[key] = value);
             options.foreach ((key, value) => vars[key] = value);
@@ -158,7 +138,7 @@ namespace DockStation {
             var main_path = files[0];
             var main_name = Path.get_basename (main_path);
             var base_dir = File.new_for_path (Path.get_dirname (main_path));
-            var file_name = "compose.%s.yaml".printf (service);
+            var file_name = ServiceTemplate.compose_file_name (service);
             var service_file = base_dir.get_child (file_name);
 
             string main_text;
@@ -177,7 +157,7 @@ namespace DockStation {
             }
 
             // Render everything first: a template error must not leave anything behind.
-            var vars = placeholders (template, service, version, options);
+            var vars = placeholders (service, version, options);
             var compose_text = template.render_compose (vars, service, host_port);
             var env_addition = template.render_env (vars, service, host_port);
 
@@ -244,7 +224,7 @@ namespace DockStation {
             var created_dirs = new GenericArray<File> ();
             var created_files = new GenericArray<File> ();
             bool env_written = false;
-            string? copy = null;
+            var overlay = new ComposeOverlay (files);
             try {
                 stream.write_all (compose_text.data, null);
                 stream.close ();
@@ -272,20 +252,10 @@ namespace DockStation {
                     env_written = true;
                 }
 
-                copy = Utils.write_hidden_copy (main_path, new_main);
-                string[] args = {};
-                foreach (unowned string file in files) {
-                    args += "-f";
-                    args += file == main_path ? copy : file;
-                }
-                args += "config";
-                args += "--quiet";
-                var result = yield Docker.run (project.path, Docker.compose_args (args));
+                overlay.replace_file (main_path, new_main);
+                var result = yield Docker.run (project.path, overlay.compose_args ({ "config", "--quiet" }));
                 if (!result.success) {
-                    var message = result.stderr_text.strip ()
-                        .replace (copy, main_path)
-                        .replace (Path.get_basename (copy), main_name);
-                    throw new IOError.FAILED (message);
+                    throw new IOError.FAILED (overlay.restore_paths (result.stderr_text.strip ()));
                 }
 
                 File.new_for_path (main_path).replace_contents (new_main.data, null, false, FileCreateFlags.NONE, null);
@@ -310,9 +280,7 @@ namespace DockStation {
                 }
                 throw e;
             } finally {
-                if (copy != null) {
-                    FileUtils.unlink (copy);
-                }
+                overlay.remove ();
             }
         }
     }
@@ -562,10 +530,8 @@ namespace DockStation {
             }
             var relative = base_dir.get_relative_path (folder);
             if (relative == null) {
-                var alert = new Adw.AlertDialog (_("Choose a Folder in the Project"),
-                                                 _("The folder must be inside %s.").printf (Utils.home_relative (project.path)));
-                alert.add_response ("close", _("_Close"));
-                alert.present (this);
+                Dialogs.show_error (this, _("Choose a Folder in the Project"),
+                                    _("The folder must be inside %s.").printf (Utils.home_relative (project.path)));
                 return;
             }
             entry.text = relative;
@@ -646,9 +612,7 @@ namespace DockStation {
             } catch (Error e) {
                 adding = false;
                 update_state ();
-                var alert = new Adw.AlertDialog (_("Could Not Add the Service"), e.message);
-                alert.add_response ("close", _("_Close"));
-                alert.present (this);
+                Dialogs.show_error (this, _("Could Not Add the Service"), e.message);
                 return;
             }
             added (name, start);

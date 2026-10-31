@@ -4,7 +4,7 @@ namespace DockStation {
         // Appended text is shown in batches: busy logs arrive hundreds of lines at a time.
         private const uint FLUSH_INTERVAL_MS = 50;
 
-        public int max_lines { get; set; default = 5000; }
+        private const int MAX_LINES = 5000;
 
         private Gtk.ScrolledWindow scrolled;
         private Gtk.TextView view;
@@ -66,7 +66,7 @@ namespace DockStation {
             buffer.insert (ref end, pending.str, (int) pending.len);
             pending.truncate (0);
 
-            int excess = buffer.get_line_count () - max_lines;
+            int excess = buffer.get_line_count () - MAX_LINES;
             if (excess > 0) {
                 Gtk.TextIter start, cut;
                 buffer.get_start_iter (out start);

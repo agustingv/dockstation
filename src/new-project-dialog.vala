@@ -256,11 +256,11 @@ namespace DockStation {
                 vars["PHP_VERSION"] = selected_php_version ();
             }
             vars["COMPOSER_INSTALL"] = dockerfile_installs_composer () ? Templates.COMPOSER_DOCKERFILE : "";
-            vars["PASSWORD"] = Utils.random_secret (24);
             vars["UID"] = ((uint) Posix.getuid ()).to_string ();
             vars["GID"] = ((uint) Posix.getgid ()).to_string ();
 
             try {
+                vars["PASSWORD"] = Utils.random_secret (24);
                 selected_template.write_to (target, vars);
             } catch (Error e) {
                 toast_overlay.add_toast (new Adw.Toast (e.message));

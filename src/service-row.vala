@@ -1,17 +1,12 @@
 namespace DockStation {
     /* Aggregated state of one compose service (possibly several replicas). */
     public class ServiceInfo : Object {
-        public string name;
         public int containers = 0;
         public int running = 0;
         public string state = "";
         public string status = "";
         public string ports = "";
         public string container_id = "";   // First container; replicas are not resettable one by one.
-
-        public ServiceInfo (string name) {
-            this.name = name;
-        }
 
         public void add_container (string id, string state, string status, string ports) {
             containers++;

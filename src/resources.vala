@@ -65,8 +65,6 @@ namespace DockStation {
 
     /* Snapshot of the containers, images and volumes known to Docker, with their disk usage. */
     public class DockerResources : Object {
-        private const string COMPOSE_PROJECT = "com.docker.compose.project";
-
         // Real tabs and newlines: the docker CLI rejects escaped ones inside templates.
         private const string DF_FORMAT =
             "{{range .Containers}}C\t{{.ID}}\t{{.Names}}\t{{.Image}}\t{{.State}}\t{{.Status}}\t{{.Size}}\t"
@@ -90,7 +88,7 @@ namespace DockStation {
 
             var df = yield Docker.run (null, { "system", "df", "--verbose", "--format", DF_FORMAT }, cancellable);
             if (!df.success) {
-                throw new IOError.FAILED (df.stderr_text.strip ().split ("\n")[0] ?? _("Could not read Docker disk usage"));
+                throw new IOError.FAILED (Utils.first_line (df.stderr_text) ?? _("Could not read Docker disk usage"));
             }
             resources.parse_disk_usage (df.stdout_text);
 

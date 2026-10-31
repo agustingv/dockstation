@@ -115,7 +115,8 @@ namespace DockStation {
             sidebar_header.pack_start (add_button);
             sidebar_header.pack_end (menu_button);
 
-            docker_banner = new Adw.Banner ("") { button_label = _("Retry") };
+            // Docker's messages are plain text, not markup.
+            docker_banner = new Adw.Banner ("") { button_label = _("Retry"), use_markup = false };
             docker_banner.button_clicked.connect (() => refresh.begin ());
 
             project_list = new Gtk.ListBox ();
@@ -667,17 +668,10 @@ namespace DockStation {
         }
 
         private async void confirm_remove (Project project) {
-            var dialog = new Adw.AlertDialog (
-                _("Remove “%s” from the List?").printf (project.name),
-                _("The project folder, its containers and its volumes will not be deleted.")
-            );
-            dialog.add_response ("cancel", _("_Cancel"));
-            dialog.add_response ("remove", _("_Remove from List"));
-            dialog.set_response_appearance ("remove", Adw.ResponseAppearance.DESTRUCTIVE);
-            dialog.default_response = "cancel";
-            dialog.close_response = "cancel";
-
-            if ((yield dialog.choose (this, null)) != "remove") {
+            if (!(yield Dialogs.confirm (this,
+                    _("Remove “%s” from the List?").printf (project.name),
+                    _("The project folder, its containers and its volumes will not be deleted."),
+                    _("_Remove from List")))) {
                 return;
             }
             store.remove (project);
@@ -735,11 +729,11 @@ namespace DockStation {
         }
 
         private void show_docker_error (string message) {
-            var first_line = message.strip ().split ("\n")[0] ?? "";
+            var first_line = Utils.first_line (message) ?? "";
             if (first_line.contains ("No such file or directory")) {
                 first_line = _("Docker is not installed");
             }
-            docker_banner.title = Markup.escape_text (first_line);
+            docker_banner.title = first_line;
             docker_banner.revealed = true;
             for (uint i = 0; i < store.projects.get_n_items (); i++) {
                 ((Project) store.projects.get_item (i)).mark_unknown ();

@@ -119,7 +119,7 @@ ninja -C build
 ./build/src/dockstation
 ```
 
-Run the checks (desktop file and AppStream metadata validation):
+Run the checks (unit tests in `tests/`, and desktop file and AppStream metadata validation). The package builds run them too:
 
 ```sh
 meson test -C build
@@ -356,6 +356,10 @@ The built-in services are compiled into the app: after adding a file to `data/se
 | `src/templates.vala` | Project templates and the PHP `Dockerfile` generator |
 | `src/service-templates.vala` | Loads the services offered by Add Service |
 | `src/add-service.vala` | Add Service dialog, and adding a service's files to a project |
+| `src/remove-service.vala` | Removing a service added with Add Service |
+| `src/compose-include.vala` | Reads the `include:` list of a compose file |
+| `src/compose-overlay.vala` | Runs Compose against temporary copies of files with unsaved changes |
+| `src/dialogs.vala` | Confirmation and error dialogs |
 | `src/new-project-dialog.vala` | New Project dialog |
 | `src/resources.vala`, `src/resources-view.vala` | Docker Resources page: disk usage of containers, images and volumes by project |
 | `src/service-row.vala`, `src/project-row.vala`, `src/log-view.vala` | Widgets |

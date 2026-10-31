@@ -1,7 +1,6 @@
 namespace DockStation {
     /* What removing a service changes; see ServiceRemover.prepare (). */
     public class ServiceRemoval : Object {
-        public string service;
         public string main_path;
         public string new_main;
         public File service_file;
@@ -14,44 +13,7 @@ namespace DockStation {
 
     /* Removes services added with Add Service (see ServiceAdder). */
     namespace ServiceRemover {
-        private const string FILE_PATTERN = "^(\\./)?compose\\.([a-z][a-z0-9_-]*)\\.yaml$";
-
-        /* Line numbers of the items of the top-level `include:` list, and their paths. */
-        private void include_items (string[] lines, out int include_line, out int[] item_lines, out string[] paths) {
-            include_line = -1;
-            int[] found_lines = {};
-            string[] found_paths = {};
-            for (int i = 0; i < lines.length; i++) {
-                if (lines[i].has_prefix ("include:")) {
-                    include_line = i;
-                    break;
-                }
-            }
-            for (int i = include_line + 1; include_line >= 0 && i < lines.length; i++) {
-                unowned string line = lines[i];
-                var stripped = line.strip ();
-                if (stripped == "" || stripped.has_prefix ("#")) {
-                    continue;
-                }
-                if (!line.has_prefix (" ") && !line.has_prefix ("\t") && !line.has_prefix ("-")) {
-                    break;
-                }
-                if (stripped.has_prefix ("-")) {
-                    var value = stripped.substring (1).strip ();
-                    var comment = value.index_of (" #");
-                    if (comment >= 0) {
-                        value = value.substring (0, comment).strip ();
-                    }
-                    if (value.length >= 2 && (value[0] == '"' || value[0] == '\'') && value[value.length - 1] == value[0]) {
-                        value = value.substring (1, value.length - 2);
-                    }
-                    found_lines += i;
-                    found_paths += value;
-                }
-            }
-            item_lines = found_lines;
-            paths = found_paths;
-        }
+        private const string FILE_PATTERN = "^(\\./)?compose\\.(" + ServiceTemplate.NAME_PATTERN + ")\\.yaml$";
 
         /* The project's services that have their own included compose.<service>.yaml. */
         public string[] added_services (Project project) {
@@ -65,16 +27,12 @@ namespace DockStation {
             } catch (Error e) {
                 return {};
             }
-            int include_line;
-            int[] item_lines;
-            string[] paths;
-            include_items (text.split ("\n"), out include_line, out item_lines, out paths);
-
+            var include = new ComposeInclude (text.split ("\n"));
             string[] services = {};
             var dir = Path.get_dirname (files[0]);
             try {
                 var pattern = new Regex (FILE_PATTERN);
-                foreach (unowned string path in paths) {
+                foreach (unowned string path in include.paths) {
                     MatchInfo match;
                     if (pattern.match (path, 0, out match)
                         && FileUtils.test (Path.build_filename (dir, path), FileTest.IS_REGULAR)) {
@@ -93,25 +51,22 @@ namespace DockStation {
          */
         public string? remove_include (string text, string path) {
             string[] lines = text.split ("\n");
-            int include_line;
-            int[] item_lines;
-            string[] paths;
-            include_items (lines, out include_line, out item_lines, out paths);
+            var include = new ComposeInclude (lines);
 
             int remove_line = -1;
-            for (int i = 0; i < paths.length; i++) {
-                if (paths[i] == path || paths[i] == "./" + path) {
-                    remove_line = item_lines[i];
+            for (int i = 0; i < include.paths.length; i++) {
+                if (include.paths[i] == path || include.paths[i] == "./" + path) {
+                    remove_line = include.item_lines[i];
                 }
             }
             if (remove_line < 0) {
                 return null;
             }
 
-            bool list_empty = item_lines.length == 1;
+            bool list_empty = include.item_lines.length == 1;
             string[] result = {};
             for (int i = 0; i < lines.length; i++) {
-                if (i == remove_line || (list_empty && i == include_line)) {
+                if (i == remove_line || (list_empty && i == include.key_line)) {
                     continue;
                 }
                 // Do not leave two blank lines where the list was.
@@ -167,9 +122,8 @@ namespace DockStation {
                 throw new IOError.NOT_FOUND (_("The project has no compose file"));
             }
             var removal = new ServiceRemoval ();
-            removal.service = service;
             removal.main_path = files[0];
-            var file_name = "compose.%s.yaml".printf (service);
+            var file_name = ServiceTemplate.compose_file_name (service);
             removal.service_file = File.new_for_path (Path.build_filename (Path.get_dirname (removal.main_path), file_name));
 
             string main_text;
@@ -200,28 +154,15 @@ namespace DockStation {
             var project_name = full.success ? compose_project_name (full.stdout_text) : null;
 
             // The project without the service: it must stay valid.
-            string? main_copy = null;
-            string? env_copy = null;
+            var overlay = new ComposeOverlay (files);
             try {
-                main_copy = Utils.write_hidden_copy (removal.main_path, removal.new_main);
-                string[] args = {};
-                foreach (unowned string file in files) {
-                    args += "-f";
-                    args += file == removal.main_path ? main_copy : file;
-                }
+                overlay.replace_file (removal.main_path, removal.new_main);
                 if (new_env != env_text) {
-                    env_copy = Utils.write_hidden_copy (removal.env_file.get_path (), new_env);
-                    args += "--env-file";
-                    args += env_copy;
+                    overlay.replace_env (removal.env_file.get_path (), new_env);
                 }
-                args += "config";
-                args += "--volumes";
-                var result = yield Docker.run (project.path, Docker.compose_args (args));
+                var result = yield Docker.run (project.path, overlay.compose_args ({ "config", "--volumes" }));
                 if (!result.success) {
-                    var message = result.stderr_text.strip ()
-                        .replace (main_copy, removal.main_path)
-                        .replace (Path.get_basename (main_copy), Path.get_basename (removal.main_path));
-                    throw new IOError.FAILED (message);
+                    throw new IOError.FAILED (overlay.restore_paths (result.stderr_text.strip ()));
                 }
 
                 // Variables still used elsewhere, such as a password another service reads, stay in .env.
@@ -253,12 +194,7 @@ namespace DockStation {
                 }
                 removal.volumes = volumes;
             } finally {
-                if (main_copy != null) {
-                    FileUtils.unlink (main_copy);
-                }
-                if (env_copy != null) {
-                    FileUtils.unlink (env_copy);
-                }
+                overlay.remove ();
             }
             return removal;
         }

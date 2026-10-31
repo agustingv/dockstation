@@ -3,10 +3,9 @@ namespace DockStation {
     public class TraefikRoute : Object {
         public string url { get; construct; }
         public string router { get; construct; }
-        public string entrypoints { get; construct; }
 
-        public TraefikRoute (string url, string router, string entrypoints) {
-            Object (url: url, router: router, entrypoints: entrypoints);
+        public TraefikRoute (string url, string router) {
+            Object (url: url, router: router);
         }
 
         /* "blog.localhost" or "blog.localhost/api", for compact display. */
@@ -124,7 +123,7 @@ namespace DockStation {
                 var path = path_in_rule (rule);
                 foreach (unowned string host in hosts_in_rule (rule)) {
                     var address = host + path;
-                    var route = new TraefikRoute ("%s://%s".printf (scheme, address), router, entrypoints);
+                    var route = new TraefikRoute ("%s://%s".printf (scheme, address), router);
                     var existing = by_address[address];
                     if (existing == null) {
                         order += address;
