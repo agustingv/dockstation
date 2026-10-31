@@ -69,14 +69,14 @@ namespace DockStation {
             status_icon = new Gtk.Image.from_icon_name ("media-record-symbolic");
             add_prefix (status_icon);
 
-            open_button = Utils.flat_icon_button ("web-browser-symbolic", _("Open in Browser"));
+            open_button = Widgets.flat_icon_button ("web-browser-symbolic", _("Open in Browser"));
             open_button.clicked.connect (on_open_clicked);
             add_suffix (open_button);
 
             links_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
             links_popover = new Gtk.Popover () { child = links_box };
             links_popover.set_parent (open_button);
-            toggle_button = Utils.flat_icon_button ("media-playback-start-symbolic", _("Start"));
+            toggle_button = Widgets.flat_icon_button ("media-playback-start-symbolic", _("Start"));
             toggle_button.clicked.connect (() => action_requested (running ? ServiceAction.STOP : ServiceAction.START));
             add_suffix (toggle_button);
             restart_button = add_button ("system-reboot-symbolic", _("Restart"), ServiceAction.RESTART);
@@ -167,7 +167,7 @@ namespace DockStation {
         }
 
         private Gtk.Button add_button (string icon, string tooltip, ServiceAction action) {
-            var button = Utils.flat_icon_button (icon, tooltip);
+            var button = Widgets.flat_icon_button (icon, tooltip);
             button.clicked.connect (() => action_requested (action));
             add_suffix (button);
             return button;
@@ -205,7 +205,7 @@ namespace DockStation {
             }
             subtitle = text;
 
-            Utils.set_state_class (status_icon, info.containers == 0 ? "dim-label" : info.state.to_css_class ());
+            Widgets.set_state_class (status_icon, info.containers == 0 ? "dim-label" : Widgets.container_state_class (info.state));
             status_icon.tooltip_text = info.containers == 0 ? _("Not created") : info.state.docker_name ();
 
             host_port = Utils.first_host_port (info.ports);

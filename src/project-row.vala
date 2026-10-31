@@ -51,7 +51,7 @@ namespace DockStation {
 
         private void update_status () {
             status_label.label = project.status_label;
-            Utils.set_state_class (status_icon, project.state.to_css_class ());
+            Widgets.set_state_class (status_icon, Widgets.project_state_class (project.state));
         }
     }
 }

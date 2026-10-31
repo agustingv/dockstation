@@ -300,7 +300,7 @@ namespace DockStation {
 
                 if (bucket.project != null) {
                     var project = bucket.project;
-                    var open_button = Utils.flat_icon_button ("go-next-symbolic", _("Open Project"));
+                    var open_button = Widgets.flat_icon_button ("go-next-symbolic", _("Open Project"));
                     open_button.clicked.connect (() => open_project (project));
                     group.header_suffix = open_button;
                 }
@@ -348,7 +348,7 @@ namespace DockStation {
         }
 
         private static Gtk.Button trash_button (string tooltip) {
-            return Utils.flat_icon_button ("user-trash-symbolic", tooltip);
+            return Widgets.flat_icon_button ("user-trash-symbolic", tooltip);
         }
 
         private static Gtk.Button cleanup_button (string label) {
@@ -484,7 +484,7 @@ namespace DockStation {
                 var subtitle = "%s · %s".printf (c.status, c.image);
                 var row = resource_row (c.name, subtitle, c.size);
                 var dot = new Gtk.Image.from_icon_name ("media-record-symbolic") { tooltip_text = c.state.docker_name () };
-                Utils.set_state_class (dot, c.state.to_css_class ());
+                Widgets.set_state_class (dot, Widgets.container_state_class (c.state));
                 row.add_prefix (dot);
                 if (is_stopped (c)) {
                     var remove = trash_button (_("Remove Container"));

@@ -4,6 +4,7 @@ dockstation_core_sources = files(
   'application.vala',
   'window.vala',
   'utils.vala',
+  'widgets.vala',
   'docker.vala',
   'project.vala',
   'project-store.vala',

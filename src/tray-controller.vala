@@ -93,7 +93,7 @@ namespace DockStation {
          * Runs a compose command for a project that may not be open, with the window possibly
          * hidden: failures are reported with a desktop notification instead of a toast.
          */
-        private async void run_command (Project project, string[] args, string busy_label, string failure) {
+        private async void run_command (Project project, owned string[] args, string busy_label, string failure) {
             if (busy_projects.contains (project.path)) {
                 return;
             }
@@ -102,7 +102,7 @@ namespace DockStation {
             try {
                 string[]? docker_args = Docker.compose_args (args);
                 if (!project.folder_exists) {
-                    docker_args = yield project.folderless_args (args);
+                    docker_args = yield Docker.folderless_args (project.path, args);
                     if (docker_args == null) {
                         throw new IOError.NOT_FOUND (_("The project folder no longer exists"));
                     }

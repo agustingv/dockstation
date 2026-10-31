@@ -454,7 +454,7 @@ namespace DockStation {
                         break;
                     case ServiceOptionType.FOLDER:
                         var entry = new Adw.EntryRow () { title = option.title };
-                        var browse = Utils.flat_icon_button ("folder-open-symbolic", _("Choose Folder"));
+                        var browse = Widgets.flat_icon_button ("folder-open-symbolic", _("Choose Folder"));
                         browse.clicked.connect (() => choose_folder.begin (entry));
                         entry.add_suffix (browse);
                         entry.changed.connect (update_state);

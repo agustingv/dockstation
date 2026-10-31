@@ -63,7 +63,7 @@ namespace DockStation {
         }
 
         private Gtk.Widget build_ui () {
-            var folder_button = Utils.flat_icon_button ("folder-open-symbolic", _("Open Folder"));
+            var folder_button = Widgets.flat_icon_button ("folder-open-symbolic", _("Open Folder"));
             folder_button.action_name = "project.open-folder";
 
             var location_row = new Adw.ActionRow () {
@@ -82,10 +82,10 @@ namespace DockStation {
             info_group.add (location_row);
             info_group.add (status_row);
 
-            var refresh_button = Utils.flat_icon_button ("view-refresh-symbolic", _("Refresh"));
+            var refresh_button = Widgets.flat_icon_button ("view-refresh-symbolic", _("Refresh"));
             refresh_button.clicked.connect (() => reload_requested ());
 
-            var add_button = Utils.flat_icon_button ("list-add-symbolic", _("Add Service…"));
+            var add_button = Widgets.flat_icon_button ("list-add-symbolic", _("Add Service…"));
             add_button.action_name = "project.add-service";
 
             var header_buttons = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
