@@ -16,6 +16,16 @@ namespace DockStation.Utils {
         return result;
     }
 
+    /* A sorted copy, by byte value: the same names always come out in the same order. */
+    public string[] sorted (string[] items) {
+        var list = new GenericArray<string> ();
+        foreach (unowned string item in items) {
+            list.add (item);
+        }
+        list.sort (strcmp);
+        return to_array (list);
+    }
+
     public delegate void Change ();
 
     /* Makes a change from code that `handler`, connected to `source`, must not react to. */

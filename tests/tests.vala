@@ -281,6 +281,10 @@ private void utils_tests () {
         source.activate (null);
         assert (calls == 1);
     });
+    Test.add_func ("/utils/sorted", () => {
+        eq_list (Utils.sorted ({ "db", "cache", "web-1", "adminer" }), { "adminer", "cache", "db", "web-1" });
+        eq_list (Utils.sorted ({}), {});
+    });
     Test.add_func ("/utils/split-lines", () => {
         eq_list (Utils.split_lines ("a\n\n  b  \n"), { "a", "b" });
     });

@@ -17,6 +17,8 @@ namespace DockStation {
         private Adw.ActionRow status_row;
         private Adw.PreferencesGroup services_group;
         private HashTable<string, ServiceRow> service_rows = new HashTable<string, ServiceRow> (str_hash, str_equal);
+        // The rows in the group, in order.
+        private ServiceRow[] shown_rows = {};
         // Services that can be removed; read from the files only when the configuration is reloaded.
         private string[] removable_services = {};
         private bool config_loaded = false;
@@ -131,7 +133,8 @@ namespace DockStation {
                     config_loaded = true;
                     removable_services = yield ServiceRemover.added_services (project);
                     if (config.success) {
-                        service_names = Utils.split_lines (config.stdout_text);
+                        // Compose does not keep them in a fixed order.
+                        service_names = Utils.sorted (Utils.split_lines (config.stdout_text));
                         services_group.description = null;
                     } else {
                         service_names = {};
@@ -164,6 +167,7 @@ namespace DockStation {
                     info.add_container (container.id, container.state, container.status, container.ports);
                 }
 
+                order = Utils.sorted (order);
                 yield inspect_containers (infos, order);
                 update_service_rows (infos, order);
             } catch (IOError.CANCELLED e) {
@@ -229,7 +233,6 @@ namespace DockStation {
         private void update_service_rows (HashTable<string, ServiceInfo> infos, string[] order) {
             foreach (var name in service_rows.get_keys ()) {
                 if (!infos.contains (name)) {
-                    services_group.remove (service_rows[name]);
                     service_rows.remove (name);
                 }
             }
@@ -241,7 +244,6 @@ namespace DockStation {
                     row.action_requested.connect (forward_action);
                     row.open_url.connect (forward_url);
                     row.set_actions_sensitive (actions_sensitive);
-                    services_group.add (row);
                     service_rows[name] = row;
                 }
                 var info = infos[name];
@@ -251,9 +253,31 @@ namespace DockStation {
                 row.show_remove (name in removable_services);
             }
 
+            show_rows_in_order (order);
+
             if (order.length == 0 && services_group.description == null) {
                 services_group.description = _("No services defined");
             }
+        }
+
+        /* A group can only add rows at the end: to put one in its place, all are added again. */
+        private void show_rows_in_order (string[] order) {
+            ServiceRow[] rows = {};
+            bool changed = order.length != shown_rows.length;
+            for (int i = 0; i < order.length; i++) {
+                rows += service_rows[order[i]];
+                changed = changed || rows[i] != shown_rows[i];
+            }
+            if (!changed) {
+                return;
+            }
+            foreach (var row in shown_rows) {
+                services_group.remove (row);
+            }
+            foreach (var row in rows) {
+                services_group.add (row);
+            }
+            shown_rows = rows;
         }
     }
 }
