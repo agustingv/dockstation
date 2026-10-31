@@ -1,3 +1,8 @@
+## DockStation v0.1.14
+
+### Changes
+- The window no longer freezes on a slow disk or network folder while reading `.env` and the compose file to validate the configuration or to add or remove a service.
+
 ## DockStation v0.1.13
 
 ### Fixes

@@ -27,6 +27,11 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.1.14" date="2026-10-31">
+      <description>
+        <p>The window stays responsive while reading a project's compose files to validate them or to add or remove a service.</p>
+      </description>
+    </release>
     <release version="0.1.13" date="2026-10-31">
       <description>
         <p>Fixes Stop in the tray menu for a project whose folder no longer exists: it could do nothing, or remove the project's containers.</p>
