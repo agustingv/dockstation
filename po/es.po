@@ -644,6 +644,11 @@ msgstr "¿Eliminar el contenedor «%s»?"
 msgid "Removed “%s”"
 msgstr "Se eliminó «%s»"
 
+#: src/window.vala:542
+#, c-format
+msgid "Removed “%s” from the list"
+msgstr "Se quitó «%s» de la lista"
+
 #: src/resources-view.vala:431
 msgid "The project will pull or build it again the next time it starts."
 msgstr "El proyecto la volverá a descargar o construir la próxima vez que se inicie."

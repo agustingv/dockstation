@@ -539,7 +539,7 @@ namespace DockStation {
             if (current_view != null && current_view.project == project) {
                 yield show_project (null);
             }
-            show_toast (_("Removed “%s”").printf (project.name));
+            show_toast (_("Removed “%s” from the list").printf (project.name));
         }
 
         /* -------------------------------------------------------------- status */
