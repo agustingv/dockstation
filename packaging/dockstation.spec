@@ -22,10 +22,12 @@ BuildRequires:  pkgconfig(gtksourceview-5) >= 5.10
 BuildRequires:  pkgconfig(libadwaita-1) >= 1.6
 BuildRequires:  pkgconfig(libportal-gtk4) >= 0.7
 
+# GTK aborts at startup without libGLESv2, which it opens at run time, so rpm cannot
+# detect it. By library and not by package: it is libglvnd-gles in Fedora, libglvnd in openSUSE.
+Requires:       libGLESv2.so.2()(64bit)
+
 Recommends:     (moby-engine or docker-ce or docker)
 Recommends:     (docker-compose or docker-compose-plugin)
-# GTK aborts at startup without libGLESv2, which it opens at run time.
-Recommends:     libglvnd-gles
 
 %description
 DockStation keeps all your Docker Compose projects in one place. Start, stop
