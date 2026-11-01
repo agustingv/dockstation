@@ -1,3 +1,8 @@
+## DockStation v0.1.16
+
+### Fixes
+- Removing a project from the list now says so. The previous message read as if the project had been deleted, especially in Spanish, although its folder, containers and volumes are kept.
+
 ## DockStation v0.1.15
 
 ### Fixes

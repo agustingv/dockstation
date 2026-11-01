@@ -27,6 +27,11 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.1.16" date="2026-11-01">
+      <description>
+        <p>The message shown when removing a project from the list no longer suggests it was deleted.</p>
+      </description>
+    </release>
     <release version="0.1.15" date="2026-10-31">
       <description>
         <p>A project's services are always listed in alphabetical order.</p>
