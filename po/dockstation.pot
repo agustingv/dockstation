@@ -662,6 +662,11 @@ msgstr ""
 msgid "Removed “%s”"
 msgstr ""
 
+#: src/window.vala:542
+#, c-format
+msgid "Removed “%s” from the list"
+msgstr ""
+
 #: src/resources-view.vala:431
 msgid "The project will pull or build it again the next time it starts."
 msgstr ""
