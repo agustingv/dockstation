@@ -27,6 +27,11 @@
     <control>touch</control>
   </supports>
   <releases>
+    <release version="0.1.17" date="2026-11-01">
+      <description>
+        <p>The RPM package now always installs the graphics library the app needs to start.</p>
+      </description>
+    </release>
     <release version="0.1.16" date="2026-11-01">
       <description>
         <p>The message shown when removing a project from the list no longer suggests it was deleted.</p>

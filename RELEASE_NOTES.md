@@ -1,3 +1,8 @@
+## DockStation v0.1.17
+
+### Fixes
+- The `.rpm` now requires `libGLESv2` instead of recommending it. With weak dependencies turned off, the package installed but the app closed at startup.
+
 ## DockStation v0.1.16
 
 ### Fixes
